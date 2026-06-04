@@ -3,219 +3,140 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>R07 Nano Blueprint AR Studio - Stark Edition</title>
+    <title>Stark Nano Matrix Engine</title>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1646695230/hands.js" crossorigin="anonymous"></script>
 
     <style>
         :root {
             --neon-cyan: #00f3ff;
             --neon-blue: #0044ff;
-            --neon-purple: #b000ff;
             --iron-gold: #ffcc00;
             --iron-red: #ff003c;
-            --glass-bg: rgba(6, 15, 30, 0.75);
+            --glass-bg: rgba(5, 12, 24, 0.8);
             --glass-border: rgba(0, 243, 255, 0.3);
             --font-cyber: 'Courier New', Courier, monospace;
         }
 
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            user-select: none;
-        }
+        * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+        body, html { width: 100%; height: 100%; overflow: hidden; background-color: #010409; font-family: var(--font-cyber); color: #e0f7fc; }
 
-        body, html {
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
-            background-color: #02060d;
-            font-family: var(--font-cyber);
-            color: #e0f7fc;
-        }
-
-        .scanlines {
+        /* Stark Security Terminal Gateway Overlap (Welcome Panel) */
+        #stark-gateway {
             position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.3) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.04), rgba(0, 255, 0, 0.01), rgba(0, 255, 0, 0.04));
-            background-size: 100% 4px, 6px 100%;
-            z-index: 999;
-            pointer-events: none;
-        }
-
-        .arc-reactor-hud {
-            position: absolute;
-            top: 50%; left: 50%;
-            transform: translate(-50%, -50%);
-            width: 260px; height: 260px;
-            border: 2px dashed rgba(0, 243, 255, 0.2);
-            border-radius: 50%;
-            pointer-events: none;
-            z-index: 2;
-            animation: rotateHUD 25s linear infinite;
-        }
-        @keyframes rotateHUD {
-            from { transform: translate(-50%, -50%) rotate(0deg); }
-            to { transform: translate(-50%, -50%) rotate(360deg); }
-        }
-
-        #app-container {
-            position: relative;
-            width: 100vw;
-            height: 100vh;
-        }
-
-        #webcam {
-            position: absolute;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            object-fit: cover;
-            z-index: 1;
-            opacity: 0.45;
-        }
-        .mirror {
-            transform: scaleX(-1);
-        }
-
-        #webgl-canvas {
-            position: absolute;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            z-index: 2;
-            pointer-events: none;
-        }
-
-        #hud-container {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            z-index: 3;
-            display: grid;
-            grid-template-rows: 70px 1fr;
-            grid-template-columns: 320px 1fr 320px;
-            grid-template-areas: 
-                "header header header"
-                "left center right";
-            padding: 15px;
-            gap: 15px;
-            pointer-events: none;
-        }
-
-        .panel-glass {
-            background: var(--glass-bg);
-            backdrop-filter: blur(15px);
-            border: 1px solid var(--glass-border);
-            border-radius: 6px;
-            padding: 15px;
-            pointer-events: auto;
-            box-shadow: 0 0 20px rgba(0, 243, 255, 0.15);
-            overflow-y: auto;
-        }
-
-        .header-panel {
-            grid-area: header;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background: radial-gradient(circle, #050f24 20%, #010409 100%);
+            z-index: 9999;
             display: flex;
-            justify-content: space-between;
+            justify-content: center;
             align-items: center;
-            border-bottom: 2px solid var(--iron-red);
+            transition: opacity 0.8s ease-out;
         }
 
+        .gateway-panel {
+            width: 480px;
+            background: rgba(6, 18, 36, 0.85);
+            border: 2px solid var(--iron-red);
+            box-shadow: 0 0 35px rgba(255, 0, 60, 0.3);
+            border-radius: 8px;
+            padding: 30px;
+            text-align: center;
+            backdrop-filter: blur(20px);
+        }
+
+        .gateway-logo {
+            width: 80px; height: 80px;
+            border: 3px double var(--neon-cyan);
+            border-radius: 50%;
+            margin: 0 auto 20px;
+            animation: pulseGlow 1.5s infinite alternate;
+        }
+
+        @keyframes pulseGlow {
+            0% { transform: scale(0.95); box-shadow: 0 0 10px var(--neon-cyan); }
+            100% { transform: scale(1.05); box-shadow: 0 0 25px var(--neon-cyan); }
+        }
+
+        .gateway-title { color: var(--iron-gold); font-size: 1.2rem; letter-spacing: 3px; margin-bottom: 15px; text-shadow: 0 0 10px rgba(255,204,0,0.5); }
+        .gateway-msg { font-size: 0.85rem; line-height: 1.6; color: #a0d8ef; margin-bottom: 25px; text-transform: uppercase; }
+
+        .btn-engage {
+            background: transparent;
+            color: var(--neon-cyan);
+            border: 1px solid var(--neon-cyan);
+            padding: 12px 30px;
+            font-family: var(--font-cyber);
+            font-size: 0.9rem;
+            font-weight: bold;
+            letter-spacing: 2px;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: inset 0 0 10px rgba(0,243,255,0.2);
+        }
+
+        .btn-engage:hover {
+            background: var(--neon-cyan);
+            color: #000;
+            box-shadow: 0 0 25px var(--neon-cyan);
+            transform: translateY(-2px);
+        }
+
+        /* Scanlines and Core HUD */
+        .scanlines { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.3) 50%); background-size: 100% 4px; z-index: 999; pointer-events: none; }
+        .arc-reactor-hud { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 260px; height: 260px; border: 2px dashed rgba(0, 243, 255, 0.2); border-radius: 50%; pointer-events: none; z-index: 2; animation: rotateHUD 25s linear infinite; }
+        @keyframes rotateHUD { from { transform: translate(-50%, -50%) rotate(0deg); } to { transform: translate(-50%, -50%) rotate(360deg); } }
+
+        #app-container { position: relative; width: 100vw; height: 100vh; }
+        #webcam { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: 1; opacity: 0.45; }
+        .mirror { transform: scaleX(-1); }
+        #webgl-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 2; pointer-events: none; }
+
+        /* Glassmorphic Cyber Panels Layout */
+        #hud-container {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 3;
+            display: grid; grid-template-rows: 70px 1fr; grid-template-columns: 320px 1fr 320px;
+            grid-template-areas: "header header header" "left center right"; padding: 15px; gap: 15px; pointer-events: none;
+        }
+
+        .panel-glass { background: var(--glass-bg); backdrop-filter: blur(15px); border: 1px solid var(--glass-border); border-radius: 6px; padding: 15px; pointer-events: auto; box-shadow: 0 0 20px rgba(0, 243, 255, 0.15); overflow-y: auto; }
+        .header-panel { grid-area: header; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--iron-red); }
         .telemetry-panel { grid-area: left; border-left: 2px solid var(--neon-cyan); }
         .actions-panel { grid-area: right; border-right: 2px solid var(--iron-gold); }
 
-        h1 {
-            font-size: 1.1rem;
-            color: var(--neon-cyan);
-            text-shadow: 0 0 10px var(--neon-cyan);
-            letter-spacing: 2px;
-        }
+        h1 { font-size: 1.1rem; color: var(--neon-cyan); text-shadow: 0 0 10px var(--neon-cyan); letter-spacing: 2px; }
+        .stark-pulse { display: inline-block; width: 10px; height: 10px; background-color: var(--iron-red); border-radius: 50%; box-shadow: 0 0 10px var(--iron-red); animation: pulse 1s infinite alternate; }
+        @keyframes pulse { 0% { transform: scale(0.8); opacity: 0.5; } 100% { transform: scale(1.2); opacity: 1; } }
 
-        .stark-pulse {
-            display: inline-block;
-            width: 10px; height: 10px;
-            background-color: var(--iron-red);
-            border-radius: 50%;
-            box-shadow: 0 0 10px var(--iron-red);
-            animation: pulse 1s infinite alternate;
-        }
-
-        @keyframes pulse {
-            0% { transform: scale(0.8); opacity: 0.5; }
-            100% { transform: scale(1.2); opacity: 1; }
-        }
-
-        .stat-row {
-            display: flex;
-            justify-content: space-between;
-            font-size: 0.8rem;
-            margin-bottom: 8px;
-        }
-
+        .stat-row { display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 8px; }
         .neon-txt { color: var(--neon-cyan); }
         .gold-txt { color: var(--iron-gold); }
         .red-txt { color: var(--iron-red); }
-
-        .cyber-divider {
-            border: 0; height: 1px;
-            background: linear-gradient(90deg, var(--neon-cyan), transparent);
-            margin: 15px 0;
-        }
-
-        .btn-cyber {
-            background: rgba(0,0,0,0.5);
-            color: #fff;
-            border: 1px solid var(--neon-cyan);
-            padding: 6px 12px;
-            font-family: var(--font-cyber);
-            font-size: 0.75rem;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        .btn-cyber:hover {
-            background: var(--neon-cyan);
-            color: #000;
-            box-shadow: 0 0 15px var(--neon-cyan);
-        }
-
+        .cyber-divider { border: 0; height: 1px; background: linear-gradient(90deg, var(--neon-cyan), transparent); margin: 15px 0; }
+        
+        .btn-cyber { background: rgba(0,0,0,0.5); color: #fff; border: 1px solid var(--neon-cyan); padding: 6px 12px; font-family: var(--font-cyber); font-size: 0.75rem; cursor: pointer; transition: all 0.2s; }
+        .btn-cyber:hover { background: var(--neon-cyan); color: #000; box-shadow: 0 0 15px var(--neon-cyan); }
         .action-btn { width: 100%; margin-bottom: 8px; }
 
-        .math-log {
-            font-size: 0.75rem;
-            background: rgba(0,0,0,0.5);
-            padding: 8px;
-            border-radius: 4px;
-            max-height: 180px;
-            overflow-y: auto;
-            color: #a0d8ef;
-            border: 1px solid rgba(0, 243, 255, 0.1);
-        }
-
-        .voice-hud {
-            margin-top: 10px;
-            font-size: 0.75rem;
-            background: rgba(255, 0, 60, 0.1);
-            padding: 6px;
-            border-left: 3px solid var(--iron-red);
-        }
-
+        .math-log { font-size: 0.75rem; background: rgba(0,0,0,0.5); padding: 8px; border-radius: 4px; max-height: 180px; overflow-y: auto; color: #a0d8ef; border: 1px solid rgba(0, 243, 255, 0.1); }
+        .voice-hud { margin-top: 10px; font-size: 0.75rem; background: rgba(255, 0, 60, 0.1); padding: 6px; border-left: 3px solid var(--iron-red); }
         .guide-box ul { list-style: none; font-size: 0.7rem; }
         .guide-box li { margin-bottom: 6px; display: flex; justify-content: space-between; }
-
-        @media(max-width: 900px) {
-            #hud-container {
-                grid-template-columns: 1fr;
-                grid-template-rows: auto auto auto;
-                grid-template-areas: "header" "left" "right";
-                overflow-y: auto;
-                pointer-events: auto;
-            }
-            .panel-glass { margin-bottom: 10px; }
-        }
     </style>
 </head>
 <body>
+
+    <div id="stark-gateway">
+        <div class="gateway-panel">
+            <div class="gateway-logo"></div>
+            <h2 class="gateway-title">SECURITY GATEWAY VERIFICATION</h2>
+            <p class="gateway-msg">
+                Are you agree? This site will initialize your hardware camera module to inject real-time holographic quantum nano particles into the local environment.
+            </p>
+            <button class="btn-engage" id="btn-engage-system">ENGAGE NANO MATRIX</button>
+        </div>
+    </div>
 
     <div class="scanlines"></div>
     <div class="arc-reactor-hud"></div>
@@ -228,49 +149,48 @@
             <header class="panel-glass header-panel">
                 <div style="display: flex; align-items: center; gap: 10px;">
                     <span class="stark-pulse"></span>
-                    <h1>STARK INDUSTRIES // R07 AR ENGINE</h1>
+                    <h1>STARK CORE // NANO MATRIX v4.0</h1>
                 </div>
                 <div>
-                    <span id="status-text" class="gold-txt" style="font-size: 0.8rem;">BOOTING AR CORE...</span>
+                    <span id="status-text" class="gold-txt" style="font-size: 0.8rem;">AWAITING SYSTEM DETONATION...</span>
                 </div>
             </header>
 
             <aside class="panel-glass telemetry-panel">
                 <h2>HUD TELEMETRY</h2>
-                <div class="stat-row"><span>FPS STATUS:</span> <span id="val-fps" class="neon-txt">60</span></div>
-                <div class="stat-row"><span>MATRIX GESTURE:</span> <span id="val-gesture" class="gold-txt">NONE</span></div>
-                <div class="stat-row"><span>NANO OBJECTS:</span> <span id="val-objcount">0</span></div>
+                <div class="stat-row"><span>CORE FPS:</span> <span id="val-fps" class="neon-txt">0</span></div>
+                <div class="stat-row"><span>GESTURE STATE:</span> <span id="val-gesture" class="gold-txt">OFFLINE</span></div>
+                <div class="stat-row"><span>NANO COUNT:</span> <span id="val-objcount">0</span></div>
                 <div class="stat-row"><span>CAMERA MODE:</span> <span id="val-cam-mode" class="red-txt">FRONT (USER)</span></div>
                 
                 <div class="voice-hud">
-                    <span class="red-txt">🎙️ JARVIS VOICE LISTENER:</span>
-                    <p id="voice-speech">Say "clear canvas" or "gravity on"</p>
+                    <span class="red-txt">🎙️ J.A.R.V.I.S. VOICE ASSIST:</span>
+                    <p id="voice-speech">Gateway clearance required...</p>
                 </div>
                 
                 <hr class="cyber-divider">
-                <h2>JARVIS CORE MATH ENGINE</h2>
+                <h2>QUANTUM VECTOR STREAM</h2>
                 <div id="math-live-output" class="math-log">
-                    Awaiting Target Tracking Vectors...
+                    System on Standby.
                 </div>
             </aside>
 
             <aside class="panel-glass actions-panel">
-                <h2>SYSTEM CORE</h2>
-                <button id="btn-gravity" class="btn-cyber action-btn">GRAVITY SYSTEM: OFF</button>
+                <h2>CONTROLS</h2>
+                <button id="btn-gravity" class="btn-cyber action-btn">GRAVITY FLUID: OFF</button>
                 <button id="btn-clear" class="btn-cyber action-btn" style="border-color: var(--iron-red); color: var(--iron-red);">PURGE MATRIX</button>
-                <button id="btn-snapshot" class="btn-cyber action-btn">SAVE GRAPH SCHEMATIC</button>
-                <button id="btn-fallback-cam" class="btn-cyber action-btn" style="border-color: #ffcc00; color: #ffcc00; font-size:0.65rem;">FORCE CAM RESET</button>
+                <button id="btn-snapshot" class="btn-cyber action-btn">EXPORT VECTOR LOG</button>
                 
                 <hr class="cyber-divider">
                 <div class="guide-box">
-                    <h3 class="gold-txt" style="margin-bottom: 8px;">STARK MOTION COMMANDS</h3>
+                    <h3 class="gold-txt" style="margin-bottom: 8px;">KINETIC TRIGGERS</h3>
                     <ul>
-                        <li>🤟 <span>Spider Sign: Switch Cam</span></li>
-                        <li>☝ <span>Index Up: Air Vector Draw</span></li>
-                        <li>🤏 <span>Pinch: Select & Drag</span></li>
-                        <li>✌ <span>Victory Shape: Circle</span></li>
-                        <li>✋ <span>Open Palm: Rectangle</span></li>
-                        <li>✊ <span>Clenched Fist: Dissolve</span></li>
+                        <li>🤟 <span>Spider Sign: Flip Cam Source</span></li>
+                        <li>☝ <span>Index Point: Light Vector Draw</span></li>
+                        <li>🤏 <span>Pinch: Grab Matrix Point</span></li>
+                        <li>✌ <span>Victory: Generate Arc Circle</span></li>
+                        <li>✋ <span>Palm: Generate Square Grid</span></li>
+                        <li>✊ <span>Fist: Particle Dissolve</span></li>
                     </ul>
                 </div>
             </aside>
@@ -296,20 +216,20 @@
         const raycaster = new THREE.Raycaster();
         const pointerVector = new THREE.Vector2();
 
-        const COLORS = {
-            neonCyan: 0x00f3ff,
-            neonBlue: 0x0044ff,
-            neonPurple: 0xb000ff,
-            ironGold: 0xffcc00,
-            ironRed: 0xff003c
-        };
+        const COLORS = { neonCyan: 0x00f3ff, neonBlue: 0x0044ff, neonPurple: 0xb000ff, ironGold: 0xffcc00, ironRed: 0xff003c };
 
-        window.addEventListener('DOMContentLoaded', () => {
+        // GATEWAY CLICK HANDLER (System Activator)
+        document.getElementById('btn-engage-system').addEventListener('click', async () => {
+            const gateway = document.getElementById('stark-gateway');
+            gateway.style.opacity = '0';
+            setTimeout(() => gateway.style.display = 'none', 800); // Smooth fade out
+
+            // Booting Engines
             initThreeEngine();
-            initMediaPipeTracking();
+            initDefaultSceneGraph();
+            await bootStarkCameraHardware();
             initVoiceCommands();
             setupDOMEventHandlers();
-            initDefaultSceneGraph();
             animateEngineLoop();
         });
 
@@ -321,7 +241,7 @@
             camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
             camera.position.set(0, 0, 5);
 
-            renderer = new THREE.WebGLRenderer({ canvas: canvas, alpha: true, antialias: true, powerPreference: "high-performance" });
+            renderer = new THREE.WebGLRenderer({ canvas: canvas, alpha: true, antialias: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
             renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
@@ -347,72 +267,52 @@
             const geometry = new THREE.BufferGeometry();
             geometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(maxDrawingPoints * 3), 3));
             
-            const material = new THREE.LineBasicMaterial({
-                color: COLORS.neonCyan,
-                transparent: true,
-                opacity: 0.9,
-                blending: THREE.AdditiveBlending
-            });
-            
+            const material = new THREE.LineBasicMaterial({ color: COLORS.neonCyan, transparent: true, opacity: 0.9, blending: THREE.AdditiveBlending });
             drawingPointsMesh = new THREE.Line(geometry, material);
             drawingPointsMesh.userData = { pointsArray: [], maxCount: maxDrawingPoints };
             scene.add(drawingPointsMesh);
         }
 
-        // Robust Native Native Fallback Camera Loader Pipeline
-        async function initMediaPipeTracking() {
+        // Camera Activation Loop wrapped in custom UI trigger
+        async function bootStarkCameraHardware() {
             const videoElement = document.getElementById('webcam');
-            updateSystemStatus("REQUESTING CAMERA INTERFACE...");
+            document.getElementById('status-text').innerText = "INJECTING PROTOCOLS...";
 
             try {
-                // Force triggering native hardware constraints first to bypass MediaPipe lockouts
+                // Direct integration request 
                 const stream = await navigator.mediaDevices.getUserMedia({
-                    video: { facingMode: STATE.cameraFacing, width: { ideal: 640 }, height: { ideal: 480 } },
+                    video: { facingMode: STATE.cameraFacing, width: 640, height: 480 },
                     audio: false
                 });
                 videoElement.srcObject = stream;
                 
-                // Initialize MediaPipe AI Hand Tracker Engine
                 handsEngine = new Hands({
                     locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1646695230/${file}`
                 });
 
-                handsEngine.setOptions({
-                    maxNumHands: 2,
-                    modelComplexity: 1,
-                    minDetectionConfidence: 0.6,
-                    minTrackingConfidence: 0.6
-                });
-
+                handsEngine.setOptions({ maxNumHands: 2, modelComplexity: 1, minDetectionConfidence: 0.65, minTrackingConfidence: 0.65 });
                 handsEngine.onResults(processHandTrackingFrames);
 
-                // Initialize Frame Stream Router
-                if (cameraPipelineInstance) {
-                    try { await cameraPipelineInstance.stop(); } catch(e){}
-                }
+                if (cameraPipelineInstance) { try { await cameraPipelineInstance.stop(); } catch(e){} }
 
                 cameraPipelineInstance = new Camera(videoElement, {
-                    onFrame: async () => {
-                        await handsEngine.send({ image: videoElement });
-                    },
-                    width: 640,
-                    height: 480
+                    onFrame: async () => { await handsEngine.send({ image: videoElement }); },
+                    width: 640, height: 480
                 });
                 
                 await cameraPipelineInstance.start();
-                updateSystemStatus("JARVIS CORE ONLINE // AR ACTIVE");
+                document.getElementById('status-text').innerText = "JARVIS ONLINE // MATRIX ARMED";
+                document.getElementById('voice-speech').innerText = 'System active. Listening for "Purge Matrix"';
 
             } catch (err) {
-                console.error(err);
-                updateSystemStatus(`ERROR: RUN VIA LOCALHOST OR HTTPS!`);
-                alert("कैमरा ब्लॉक हुआ! कृपया सुनिश्चित करें कि आप 'localhost' या 'https://' सर्वर पर इसे रन कर रहे हैं और कैमरा परमिशन Allow की है।");
+                document.getElementById('status-text').innerText = "HARDWARE SECURE LINK FAILED";
+                alert("Security Error: Please run this file using a local dev server (Live Server) or an HTTPS hosting link.");
             }
         }
 
         function toggleCameraSource() {
             if (STATE.camDebounce) return;
             STATE.camDebounce = true;
-
             STATE.cameraFacing = (STATE.cameraFacing === 'user') ? 'environment' : 'user';
             
             const videoElement = document.getElementById('webcam');
@@ -423,8 +323,7 @@
                 videoElement.classList.remove('mirror');
                 document.getElementById('val-cam-mode').innerText = "BACK (WORLD)";
             }
-
-            initMediaPipeTracking();
+            bootStarkCameraHardware();
             setTimeout(() => { STATE.camDebounce = false; }, 2500);
         }
 
@@ -434,7 +333,6 @@
                 document.getElementById('val-gesture').innerText = "NONE";
                 return;
             }
-
             const landmarksCount = results.multiHandLandmarks.length;
             const hand1 = results.multiHandLandmarks[0];
             const indexTip = transformLandmarkTo3DSpace(hand1[8]); 
@@ -445,8 +343,7 @@
             if (landmarksCount === 1) {
                 evaluateSingleHandGestures(hand1, indexTip);
             } else if (landmarksCount === 2) {
-                const hand2 = results.multiHandLandmarks[1];
-                evaluateDoubleHandGestures(hand1, hand2);
+                evaluateDoubleHandGestures(hand1, results.multiHandLandmarks[1]);
             }
         }
 
@@ -465,38 +362,33 @@
             const isPinkyExtended = hand[20].y < hand[18].y;
 
             if (isIndexExtended && !isMiddleExtended && !isRingExtended && isPinkyExtended) {
-                setEngineGestureState("SPIDER SIGN [CAMERA TOGGLE]");
+                setEngineGestureState("SPIDER SIGN [FLIP CAM]");
                 toggleCameraSource();
                 return;
             }
-
             if (!isIndexExtended && !isMiddleExtended && !isRingExtended && !isPinkyExtended) {
                 setEngineGestureState("CLENCHED FIST [ERASER]");
                 executeAirEraserRadius(indexTip);
                 return;
             }
-
             const pinchDistance = calculateDistance3D(hand[4], hand[8]);
             if (pinchDistance < 0.04) {
-                setEngineGestureState("PINCH [OBJECT MANIPULATION]");
+                setEngineGestureState("PINCH [DRAG OBJECT]");
                 executeObjectRaycastSelection(indexTip);
                 return;
             }
-
             if (isIndexExtended && isMiddleExtended && !isRingExtended && !isPinkyExtended) {
-                setEngineGestureState("VICTORY [CYAN CIRCLE]");
+                setEngineGestureState("VICTORY [CIRCLE]");
                 debounceInstantiate(() => createProcedural2DShape('CIRCLE', indexTip), 1000);
                 return;
             }
-
             if (isIndexExtended && isMiddleExtended && isRingExtended && isPinkyExtended) {
-                setEngineGestureState("OPEN PALM [SQUARE GRID]");
+                setEngineGestureState("OPEN PALM [SQUARE]");
                 debounceInstantiate(() => createProcedural2DShape('RECTANGLE', indexTip), 1000);
                 return;
             }
-
             if (isIndexExtended && !isMiddleExtended) {
-                setEngineGestureState("INDEX [STARK AIR VECTOR DRAW]");
+                setEngineGestureState("INDEX POINTER [DRAW]");
                 appendPointToAirBlueprint(indexTip);
                 return;
             }
@@ -505,51 +397,27 @@
         function evaluateDoubleHandGestures(hand1, hand2) {
             const h1Index = transformLandmarkTo3DSpace(hand1[8]);
             const h2Index = transformLandmarkTo3DSpace(hand2[8]);
-            
-            const isH1Pinch = calculateDistance3D(hand1[4], hand1[8]) < 0.04;
-            const isH2Pinch = calculateDistance3D(hand2[4], hand2[8]) < 0.04;
-
-            if (isH1Pinch && isH2Pinch) {
-                setEngineGestureState("DOUBLE PINCH [QUANTUM CUBE]");
+            if (calculateDistance3D(hand1[4], hand1[8]) < 0.04 && calculateDistance3D(hand2[4], hand2[8]) < 0.04) {
+                setEngineGestureState("DOUBLE PINCH [3D CUBE]");
                 debounceInstantiate(() => createProcedural3DGeometry('CUBE', h1Index.clone().add(h2Index).multiplyScalar(0.5)), 1200);
-                return;
-            }
-
-            const isH1Palm = hand1[8].y < hand1[6].y && hand1[12].y < hand1[10].y && hand1[16].y < hand1[14].y;
-            const isH2Palm = hand2[8].y < hand2[6].y && hand2[12].y < hand2[10].y && hand2[16].y < hand2[14].y;
-            
-            if (isH1Palm && isH2Palm) {
-                setEngineGestureState("DUAL PALMS [QUANTUM SPHERE]");
-                debounceInstantiate(() => createProcedural3DGeometry('SPHERE', h1Index.clone().add(h2Index).multiplyScalar(0.5)), 1200);
-                return;
             }
         }
 
         function appendPointToAirBlueprint(pointVector) {
             const meshData = drawingPointsMesh.userData;
             const points = meshData.pointsArray;
-            
-            if (points.length > 0) {
-                const lastPoint = points[points.length - 1];
-                if (pointVector.distanceTo(lastPoint) < 0.02) return;
-            }
-
+            if (points.length > 0 && pointVector.distanceTo(points[points.length - 1]) < 0.02) return;
             points.push(pointVector.clone());
             if (points.length > meshData.maxCount) points.shift();
-
-            const positionAttribute = drawingPointsMesh.geometry.attributes.position;
-            for (let i = 0; i < points.length; i++) {
-                positionAttribute.setXYZ(i, points[i].x, points[i].y, points[i].z);
-            }
+            const posAttr = drawingPointsMesh.geometry.attributes.position;
+            for (let i = 0; i < points.length; i++) posAttr.setXYZ(i, points[i].x, points[i].y, points[i].z);
             drawingPointsMesh.geometry.setDrawRange(0, points.length);
-            positionAttribute.needsUpdate = true;
-
+            posAttr.needsUpdate = true;
             spawnNanoEnergyParticles(pointVector, COLORS.neonCyan, 2);
         }
 
         function executeAirEraserRadius(targetPoint) {
             spawnNanoEnergyParticles(targetPoint, COLORS.ironRed, 3);
-            
             for (let i = STATE.physicsObjects.length - 1; i >= 0; i--) {
                 const obj = STATE.physicsObjects[i];
                 if (obj.position.distanceTo(targetPoint) < 0.6) {
@@ -563,89 +431,46 @@
 
         function executeObjectRaycastSelection(indexTip) {
             const screenPos = indexTip.clone().project(camera);
-            pointerVector.x = screenPos.x;
-            pointerVector.y = screenPos.y;
-
+            pointerVector.x = screenPos.x; pointerVector.y = screenPos.y;
             raycaster.setFromCamera(pointerVector, camera);
             const intersects = raycaster.intersectObjects(STATE.physicsObjects);
-
             if (intersects.length > 0) {
-                const targetedObj = intersects[0].object;
-                targetedObj.position.lerp(new THREE.Vector3(indexTip.x, indexTip.y, targetedObj.position.z), 0.25);
-                spawnNanoEnergyParticles(targetedObj.position, COLORS.ironGold, 1);
+                intersects[0].object.position.lerp(new THREE.Vector3(indexTip.x, indexTip.y, intersects[0].object.position.z), 0.25);
             }
         }
 
         function createProcedural2DShape(type, baseVector) {
-            let shapeGeo;
-            if (type === 'CIRCLE') {
-                shapeGeo = new THREE.CircleGeometry(0.4, 32);
-                shapeGeo = new THREE.EdgesGeometry(shapeGeo);
-            } else {
-                shapeGeo = new THREE.RingGeometry(0.3, 0.4, 4);
-            }
-
-            const material = new THREE.LineBasicMaterial({ color: COLORS.neonCyan, side: THREE.DoubleSide });
-            const mesh = new THREE.LineSegments(shapeGeo, material);
+            let shapeGeo = (type === 'CIRCLE') ? new THREE.EdgesGeometry(new THREE.CircleGeometry(0.4, 32)) : new THREE.RingGeometry(0.3, 0.4, 4);
+            const mesh = new THREE.LineSegments(shapeGeo, new THREE.LineBasicMaterial({ color: COLORS.neonCyan }));
             mesh.position.copy(baseVector);
-            
             mesh.userData = { type: type, physics: { velocity: new THREE.Vector3(), mass: 1.0 } };
             scene.add(mesh);
             STATE.physicsObjects.push(mesh);
             updateUIMetricsCounters();
             triggerParticleExplosion(baseVector, COLORS.neonCyan);
-
-            logMathCalculation(`[JARVIS TARGET MATRIX]<br>Object: 2D ${type}<br>Area Vector: ${(Math.PI * Math.pow(0.4, 2)).toFixed(4)} u²`);
         }
 
         function createProcedural3DGeometry(type, positionVector) {
-            let geo = (type === 'CUBE') ? new THREE.BoxGeometry(0.6, 0.6, 0.6) : new THREE.SphereGeometry(0.4, 12, 12);
-            const wireframeProp = new THREE.MeshBasicMaterial({
-                color: (type === 'CUBE') ? COLORS.ironGold : COLORS.neonPurple,
-                wireframe: true,
-                transparent: true,
-                opacity: 0.75
-            });
-
-            const mesh = new THREE.Mesh(geo, wireframeProp);
+            let geo = new THREE.BoxGeometry(0.6, 0.6, 0.6);
+            const mesh = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: COLORS.ironGold, wireframe: true, transparent: true, opacity: 0.75 }));
             mesh.position.copy(positionVector);
-
-            mesh.userData = {
-                type: type,
-                physics: { velocity: new THREE.Vector3((Math.random() - 0.5) * 0.02, 0, (Math.random() - 0.5) * 0.02), mass: 1.5 }
-            };
-
+            mesh.userData = { type: type, physics: { velocity: new THREE.Vector3((Math.random() - 0.5) * 0.02, 0, (Math.random() - 0.5) * 0.02), mass: 1.5 } };
             scene.add(mesh);
             STATE.physicsObjects.push(mesh);
             updateUIMetricsCounters();
             triggerParticleExplosion(positionVector, COLORS.ironGold);
-
-            let vol = (type === 'CUBE') ? Math.pow(0.6, 3) : (4/3) * Math.PI * Math.pow(0.4, 3);
-            logMathCalculation(`[STARK QUANTUM SIMULATION]<br>Volume Core: ${vol.toFixed(4)} u³`);
         }
 
         function initVoiceCommands() {
-            if (!('webkitSpeechRecognition' in window)) {
-                document.getElementById('voice-speech').innerText = "Voice Optimization Standby Mode.";
-                return;
-            }
+            if (!('webkitSpeechRecognition' in window)) return;
             const recognition = new webkitSpeechRecognition();
-            recognition.continuous = true;
-            recognition.lang = 'en-US';
-            
+            recognition.continuous = true; recognition.lang = 'en-US';
             recognition.onresult = (event) => {
                 const phrase = event.results[event.results.length - 1][0].transcript.toLowerCase().trim();
                 document.getElementById('voice-speech').innerText = `"${phrase}"`;
-
-                if (phrase.includes("clear") || phrase.includes("purge")) {
-                    document.getElementById('btn-clear').click();
-                } else if (phrase.includes("gravity on")) {
-                    if(!STATE.gravityActive) document.getElementById('btn-gravity').click();
-                } else if (phrase.includes("gravity off")) {
-                    if(STATE.gravityActive) document.getElementById('btn-gravity').click();
-                } else if (phrase.includes("camera") || phrase.includes("switch")) {
-                    toggleCameraSource();
-                }
+                if (phrase.includes("clear") || phrase.includes("purge")) document.getElementById('btn-clear').click();
+                if (phrase.includes("gravity on") && !STATE.gravityActive) document.getElementById('btn-gravity').click();
+                if (phrase.includes("gravity off") && STATE.gravityActive) document.getElementById('btn-gravity').click();
             };
             try { recognition.start(); } catch(e){}
         }
@@ -653,29 +478,19 @@
         function runPhysicsTick() {
             const gravityConstant = -0.01;
             STATE.physicsObjects.forEach(obj => {
-                const phys = obj.userData.physics;
-                if (!phys) return;
-
+                const phys = obj.userData.physics; if (!phys) return;
                 if (STATE.gravityActive) phys.velocity.y += gravityConstant;
-                phys.velocity.multiplyScalar(0.98); 
-                obj.position.add(phys.velocity);
-
-                if (obj.position.y < -1.8) {
-                    obj.position.y = -1.8;
-                    phys.velocity.y *= -0.5; 
-                }
-                obj.rotation.x += 0.005;
-                obj.rotation.y += 0.01;
+                phys.velocity.multiplyScalar(0.98); obj.position.add(phys.velocity);
+                if (obj.position.y < -1.8) { obj.position.y = -1.8; phys.velocity.y *= -0.5; }
+                obj.rotation.x += 0.005; obj.rotation.y += 0.01;
             });
         }
 
         function animateEngineLoop() {
             requestAnimationFrame(animateEngineLoop);
-
             const now = performance.now();
             STATE.fps = Math.round(1000 / (now - STATE.lastFrameTime));
             STATE.lastFrameTime = now;
-
             runPhysicsTick();
 
             for (let i = STATE.particlesPool.length - 1; i >= 0; i--) {
@@ -683,39 +498,21 @@
                 p.position.add(p.userData.velocity);
                 p.userData.lifespan -= p.userData.decay;
                 p.material.opacity = p.userData.lifespan;
-                if (p.userData.lifespan <= 0) {
-                    scene.remove(p);
-                    STATE.particlesPool.splice(i, 1);
-                }
+                if (p.userData.lifespan <= 0) { scene.remove(p); STATE.particlesPool.splice(i, 1); }
             }
-
             renderer.render(scene, camera);
-
-            if (Math.random() < 0.08) {
-                document.getElementById('val-fps').innerText = STATE.fps;
-            }
+            if (Math.random() < 0.08) document.getElementById('val-fps').innerText = STATE.fps;
         }
 
         function calculateKinematicCalculations(currentPosition) {
             const now = performance.now() / 1000;
-            if (!STATE.metrics.lastPos) {
-                STATE.metrics.lastPos = currentPosition.clone();
-                STATE.metrics.lastTime = now;
-                return;
-            }
-            const elapsed = now - STATE.metrics.lastTime;
-            if (elapsed < 0.1) return;
-
+            if (!STATE.metrics.lastPos) { STATE.metrics.lastPos = currentPosition.clone(); STATE.metrics.lastTime = now; return; }
+            const elapsed = now - STATE.metrics.lastTime; if (elapsed < 0.1) return;
             const dist = currentPosition.distanceTo(STATE.metrics.lastPos);
             const vel = dist / elapsed;
-            const acc = (vel - STATE.metrics.velocity) / elapsed;
-
-            STATE.metrics.velocity = vel;
-            STATE.metrics.lastPos.copy(currentPosition);
-            STATE.metrics.lastTime = now;
-
+            STATE.metrics.velocity = vel; STATE.metrics.lastPos.copy(currentPosition); STATE.metrics.lastTime = now;
             if (STATE.activeGesture.includes("DRAW")) {
-                logMathCalculation(`[KINEMATIC VECTOR METRICS]<br>Velocity: ${vel.toFixed(2)} m/s<br>Acceleration: ${acc.toFixed(2)} m/s²`);
+                document.getElementById('math-live-output').innerHTML = `[VECTOR METRICS]<br>Velocity: ${vel.toFixed(2)} m/s`;
             }
         }
 
@@ -723,79 +520,38 @@
             for (let i = 0; i < count; i++) {
                 const pGeo = new THREE.BufferGeometry().setAttribute('position', new THREE.BufferAttribute(new Float32Array([0,0,0]), 3));
                 const pMat = new THREE.PointsMaterial({ color: colorHex, size: 0.09, transparent: true, blending: THREE.AdditiveBlending });
-                const pMesh = new THREE.Points(pGeo, pMat);
-                pMesh.position.copy(origin);
-                pMesh.userData = {
-                    velocity: new THREE.Vector3((Math.random() - 0.5) * 0.06, (Math.random() - 0.5) * 0.06, (Math.random() - 0.5) * 0.06),
-                    lifespan: 1.0,
-                    decay: 0.04
-                };
-                scene.add(pMesh);
-                STATE.particlesPool.push(pMesh);
+                const pMesh = new THREE.Points(pGeo, pMat); pMesh.position.copy(origin);
+                pMesh.userData = { velocity: new THREE.Vector3((Math.random() - 0.5) * 0.06, (Math.random() - 0.5) * 0.06, (Math.random() - 0.5) * 0.06), lifespan: 1.0, decay: 0.04 };
+                scene.add(pMesh); STATE.particlesPool.push(pMesh);
             }
         }
 
-        function triggerParticleExplosion(pos, color) {
-            spawnNanoEnergyParticles(pos, color, 20);
-        }
+        function triggerParticleExplosion(pos, color) { spawnNanoEnergyParticles(pos, color, 20); }
 
         function setupDOMEventHandlers() {
             document.getElementById('btn-gravity').addEventListener('click', (e) => {
                 STATE.gravityActive = !STATE.gravityActive;
-                e.target.innerText = `GRAVITY SYSTEM: ${STATE.gravityActive ? 'ON' : 'OFF'}`;
+                e.target.innerText = `GRAVITY FLUID: ${STATE.gravityActive ? 'ON' : 'OFF'}`;
                 e.target.classList.toggle('red-txt');
             });
-
             document.getElementById('btn-clear').addEventListener('click', () => {
-                STATE.physicsObjects.forEach(obj => scene.remove(obj));
-                STATE.physicsObjects = [];
-                drawingPointsMesh.userData.pointsArray = [];
-                drawingPointsMesh.geometry.setDrawRange(0, 0);
+                STATE.physicsObjects.forEach(obj => scene.remove(obj)); STATE.physicsObjects = [];
+                drawingPointsMesh.userData.pointsArray = []; drawingPointsMesh.geometry.setDrawRange(0, 0);
                 updateUIMetricsCounters();
             });
-
             document.getElementById('btn-snapshot').addEventListener('click', () => {
                 renderer.render(scene, camera);
-                const link = document.createElement('a');
-                link.download = 'stark_blueprint.png';
-                link.href = renderer.domElement.toDataURL('image/png');
-                link.click();
-            });
-
-            document.getElementById('btn-fallback-cam').addEventListener('click', () => {
-                initMediaPipeTracking();
+                const link = document.createElement('a'); link.download = 'stark_blueprint.png';
+                link.href = renderer.domElement.toDataURL('image/png'); link.click();
             });
         }
 
         let dbGate = false;
-        function debounceInstantiate(cb, ms) {
-            if (dbGate) return;
-            dbGate = true; cb();
-            setTimeout(() => { dbGate = false; }, ms);
-        }
-
-        function setEngineGestureState(str) {
-            if (STATE.activeGesture !== str) {
-                STATE.activeGesture = str;
-                document.getElementById('val-gesture').innerText = str;
-            }
-        }
-
-        function updateSystemStatus(msg) {
-            document.getElementById('status-text').innerText = msg;
-        }
-
-        function logMathCalculation(htmlMessage) {
-            document.getElementById('math-live-output').innerHTML = htmlMessage;
-        }
-
-        function updateUIMetricsCounters() {
-            document.getElementById('val-objcount').innerText = STATE.physicsObjects.length;
-        }
-
-        function calculateDistance3D(pt1, pt2) {
-            return Math.sqrt(Math.pow(pt2.x - pt1.x, 2) + Math.pow(pt2.y - pt1.y, 2) + Math.pow(pt2.z - pt1.z, 2));
-        }
+        function debounceInstantiate(cb, ms) { if (dbGate) return; dbGate = true; cb(); setTimeout(() => { dbGate = false; }, ms); }
+        function setEngineGestureState(str) { if (STATE.activeGesture !== str) { STATE.activeGesture = str; document.getElementById('val-gesture').innerText = str; } }
+        function updateUIMetricsCounters() { document.getElementById('val-objcount').innerText = STATE.physicsObjects.length; }
+        function calculateDistance3D(pt1, pt2) { return Math.sqrt(Math.pow(pt2.x - pt1.x, 2) + Math.pow(pt2.y - pt1.y, 2) + Math.pow(pt2.z - pt1.z, 2)); }
     </script>
 </body>
 </html>
+
