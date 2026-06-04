@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>R07 Nano Blueprint AR Studio</title>
+    <title>R07 Nano Blueprint AR Studio - Iron Man Edition</title>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
@@ -14,9 +14,10 @@
             --neon-cyan: #00f3ff;
             --neon-blue: #0044ff;
             --neon-purple: #b000ff;
-            --holo-white: #e0f7fc;
-            --glass-bg: rgba(6, 15, 30, 0.65);
-            --glass-border: rgba(0, 243, 255, 0.25);
+            --iron-gold: #ffcc00;
+            --iron-red: #ff003c;
+            --glass-bg: rgba(6, 15, 30, 0.7);
+            --glass-border: rgba(0, 243, 255, 0.3);
             --font-cyber: 'Courier New', Courier, monospace;
         }
 
@@ -33,17 +34,34 @@
             overflow: hidden;
             background-color: #02060d;
             font-family: var(--font-cyber);
-            color: var(--holo-white);
+            color: #e0f7fc;
         }
 
-        /* Scanlines and Cyberpunk Atmosphere */
+        /* Stark HUD Atmosphere & Scanlines */
         .scanlines {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
-            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.3) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.04), rgba(0, 255, 0, 0.01), rgba(0, 255, 0, 0.04));
             background-size: 100% 4px, 6px 100%;
             z-index: 999;
             pointer-events: none;
+        }
+
+        /* Iron Man Center Arc Reactor Grid */
+        .arc-reactor-hud {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 300px; height: 300px;
+            border: 2px dashed rgba(0, 243, 255, 0.2);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 2;
+            animation: rotateHUD 20s linear infinite;
+        }
+        @keyframes rotateHUD {
+            from { transform: translate(-50%, -50%) rotate(0deg); }
+            to { transform: translate(-50%, -50%) rotate(360deg); }
         }
 
         #app-container {
@@ -52,15 +70,16 @@
             height: 100vh;
         }
 
-        /* Tracking Target Camera (Flipped context for UI mapping) */
         #webcam {
             position: absolute;
             top: 0; left: 0;
             width: 100%; height: 100%;
             object-fit: cover;
-            transform: scaleX(-1);
             z-index: 1;
-            opacity: 0.35; /* Blended background */
+            opacity: 0.45;
+        }
+        .mirror {
+            transform: scaleX(-1);
         }
 
         #webgl-canvas {
@@ -71,7 +90,7 @@
             pointer-events: none;
         }
 
-        /* Glassmorphism Engineering Panels */
+        /* Panels Layout */
         #hud-container {
             position: absolute;
             top: 0; left: 0; width: 100%; height: 100%;
@@ -89,12 +108,12 @@
 
         .panel-glass {
             background: var(--glass-bg);
-            backdrop-filter: blur(12px);
+            backdrop-filter: blur(15px);
             border: 1px solid var(--glass-border);
-            border-radius: 4px;
+            border-radius: 6px;
             padding: 15px;
             pointer-events: auto;
-            box-shadow: 0 0 15px rgba(0, 243, 255, 0.1);
+            box-shadow: 0 0 20px rgba(0, 243, 255, 0.15);
             overflow-y: auto;
         }
 
@@ -103,41 +122,31 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            border-bottom: 2px solid var(--iron-red);
         }
 
-        .telemetry-panel { grid-area: left; }
-        .actions-panel { grid-area: right; }
+        .telemetry-panel { grid-area: left; border-left: 2px solid var(--neon-cyan); }
+        .actions-panel { grid-area: right; border-right: 2px solid var(--iron-gold); }
 
-        /* Interactive Cyber Elements */
         h1 {
-            font-size: 1.2rem;
+            font-size: 1.1rem;
             color: var(--neon-cyan);
-            text-shadow: 0 0 8px var(--neon-cyan);
+            text-shadow: 0 0 10px var(--neon-cyan);
             letter-spacing: 2px;
-            display: inline-block;
         }
 
-        h2 {
-            font-size: 0.9rem;
-            color: var(--neon-cyan);
-            margin-bottom: 12px;
-            border-left: 3px solid var(--neon-cyan);
-            padding-left: 6px;
-        }
-
-        .pulse-dot {
+        .stark-pulse {
             display: inline-block;
-            width: 8px; height: 8px;
-            background-color: #00ff66;
+            width: 10px; height: 10px;
+            background-color: var(--iron-red);
             border-radius: 50%;
-            box-shadow: 0 0 8px #00ff66;
-            animation: pulse 1.5s infinite;
+            box-shadow: 0 0 10px var(--iron-red);
+            animation: pulse 1s infinite alternate;
         }
 
         @keyframes pulse {
-            0% { opacity: 0.4; }
-            50% { opacity: 1; }
-            100% { opacity: 0.4; }
+            0% { transform: scale(0.8); opacity: 0.5; }
+            100% { transform: scale(1.2); opacity: 1; }
         }
 
         .stat-row {
@@ -147,146 +156,125 @@
             margin-bottom: 8px;
         }
 
-        .neon-txt { color: var(--neon-cyan); text-shadow: 0 0 5px var(--neon-cyan); }
-        .neon-purple-txt { color: var(--neon-purple); text-shadow: 0 0 5px var(--neon-purple); }
+        .neon-txt { color: var(--neon-cyan); }
+        .gold-txt { color: var(--iron-gold); }
+        .red-txt { color: var(--iron-red); }
 
         .cyber-divider {
-            border: 0;
-            height: 1px;
+            border: 0; height: 1px;
             background: linear-gradient(90deg, var(--neon-cyan), transparent);
             margin: 15px 0;
         }
 
         .btn-cyber {
-            background: transparent;
-            color: var(--holo-white);
+            background: rgba(0,0,0,0.5);
+            color: #fff;
             border: 1px solid var(--neon-cyan);
             padding: 6px 12px;
             font-family: var(--font-cyber);
             font-size: 0.75rem;
             cursor: pointer;
-            transition: all 0.2s ease;
-            text-transform: uppercase;
+            transition: all 0.2s;
         }
-
         .btn-cyber:hover {
             background: var(--neon-cyan);
             color: #000;
-            box-shadow: 0 0 10px var(--neon-cyan);
+            box-shadow: 0 0 15px var(--neon-cyan);
         }
 
-        .action-btn {
-            width: 100%;
-            margin-bottom: 8px;
-        }
-
-        .alert-btn {
-            border-color: #ff0055;
-            color: #ff0055;
-        }
-        .alert-btn:hover {
-            background: #ff0055;
-            color: #000;
-            box-shadow: 0 0 10px #ff0055;
-        }
+        .action-btn { width: 100%; margin-bottom: 8px; }
 
         .math-log {
             font-size: 0.75rem;
-            background: rgba(0,0,0,0.4);
+            background: rgba(0,0,0,0.5);
             padding: 8px;
-            border-radius: 3px;
-            max-height: 200px;
+            border-radius: 4px;
+            max-height: 180px;
             overflow-y: auto;
             color: #a0d8ef;
-            line-height: 1.4;
+            border: 1px solid rgba(0, 243, 255, 0.1);
         }
 
-        .guide-box ul {
-            list-style: none;
-            font-size: 0.7rem;
-        }
-        .guide-box li {
-            margin-bottom: 6px;
-            display: flex;
-            justify-content: space-between;
+        .voice-hud {
+            margin-top: 10px;
+            font-size: 0.75rem;
+            background: rgba(255, 0, 60, 0.1);
+            padding: 6px;
+            border-left: 3px solid var(--iron-red);
         }
 
-        input[type=range] {
-            width: 100%;
-            background: transparent;
-            accent-color: var(--neon-cyan);
-        }
+        .guide-box ul { list-style: none; font-size: 0.7rem; }
+        .guide-box li { margin-bottom: 6px; display: flex; justify-content: space-between; }
 
         @media(max-width: 900px) {
             #hud-container {
                 grid-template-columns: 1fr;
                 grid-template-rows: auto auto auto;
-                grid-template-areas: 
-                    "header"
-                    "left"
-                    "right";
+                grid-template-areas: "header" "left" "right";
                 overflow-y: auto;
                 pointer-events: auto;
             }
-            .panel-glass { pointer-events: auto; margin-bottom: 5px;}
-            .controls-global { display: flex; flex-wrap: wrap; gap: 5px; }
+            .panel-glass { margin-bottom: 10px; }
         }
     </style>
 </head>
 <body>
 
     <div class="scanlines"></div>
+    <div class="arc-reactor-hud"></div>
 
     <div id="app-container">
-        <video id="webcam" autoplay playsinline muted></video>
+        <video id="webcam" autoplay playsinline muted class="mirror"></video>
         <canvas id="webgl-canvas"></canvas>
 
         <div id="hud-container">
             <header class="panel-glass header-panel">
-                <div class="brand">
-                    <h1>R07 // NANO BLUEPRINT</h1>
-                    <span class="pulse-dot"></span> <span id="status-text">INITIALIZING SYSTEM...</span>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <span class="stark-pulse"></span>
+                    <h1>STARK INDUSTRIES // R07 AR ENGINE</h1>
                 </div>
-                <div class="controls-global">
-                    <button id="btn-gravity" class="btn-cyber">GRAVITY: OFF</button>
-                    <button id="btn-export-json" class="btn-cyber">EXPORT JSON</button>
-                    <button id="btn-export-png" class="btn-cyber">SNAPSHOT</button>
+                <div>
+                    <span id="status-text" class="gold-txt" style="font-size: 0.8rem;">SYSTEM J.A.R.V.I.S. ONLINE</span>
                 </div>
             </header>
 
             <aside class="panel-glass telemetry-panel">
-                <h2>TELEMETRY DATA</h2>
-                <div class="stat-row"><span>FPS:</span> <span id="val-fps" class="neon-txt">0</span></div>
-                <div class="stat-row"><span>ACTIVE GESTURE:</span> <span id="val-gesture" class="neon-purple-txt">NONE</span></div>
-                <div class="stat-row"><span>OBJECT COUNT:</span> <span id="val-objcount">0</span></div>
-                <div class="stat-row"><span>ZOOM LEVEL:</span> <span id="val-zoom">1.0x</span></div>
+                <h2>HUD TELEMETRY</h2>
+                <div class="stat-row"><span>FPS STATUS:</span> <span id="val-fps" class="neon-txt">60</span></div>
+                <div class="stat-row"><span>MATRIX GESTURE:</span> <span id="val-gesture" class="gold-txt">NONE</span></div>
+                <div class="stat-row"><span>NANO OBJECTS:</span> <span id="val-objcount">0</span></div>
+                <div class="stat-row"><span>CAMERA MODE:</span> <span id="val-cam-mode" class="red-txt">FRONT (USER)</span></div>
+                
+                <div class="voice-hud">
+                    <span class="red-txt">🎙️ JARVIS VOICE LISTENER:</span>
+                    <p id="voice-speech">Say "clear canvas" or "gravity on"</p>
+                </div>
+                
                 <hr class="cyber-divider">
-                <h2>MATH ENGINE VECTORS</h2>
+                <h2>JARVIS CORE MATH ENGINE</h2>
                 <div id="math-live-output" class="math-log">
-                    No active calculations. Engage gestures to track computations.
+                    Awaiting Target Tracking Vectors...
                 </div>
             </aside>
 
             <aside class="panel-glass actions-panel">
-                <h2>WORKSPACE</h2>
-                <button id="btn-undo" class="btn-cyber action-btn">UNDO</button>
-                <button id="btn-clear" class="btn-cyber action-btn alert-btn">PURGE CANVAS</button>
-                <div class="eraser-control">
-                    <label for="eraser-radius">ERASER RAD:</label>
-                    <input type="range" id="eraser-radius" min="0.1" max="2.0" step="0.1" value="0.5">
-                </div>
+                <h2>SYSTEM CORE</h2>
+                <button id="btn-gravity" class="btn-cyber action-btn">GRAVITY SYSTEM: OFF</button>
+                <button id="btn-clear" class="btn-cyber action-btn" style="border-color: var(--iron-red); color: var(--iron-red);">PURGE MATRIX</button>
+                <button id="btn-snapshot" class="btn-cyber action-btn">SAVE GRAPH SCHEMATIC</button>
+                
                 <hr class="cyber-divider">
                 <div class="guide-box">
-                    <h3>GESTURE MANIFEST</h3>
+                    <h3 class="gold-txt" style="margin-bottom: 8px;">STARK MOTION COMMANDS</h3>
                     <ul>
-                        <li>☝ <span>Index: Air Draw</span></li>
-                        <li>🤏 <span>Pinch: Select / Drag</span></li>
-                        <li>✌ <span>Victory: Create Circle</span></li>
-                        <li>✋ <span>Open Palm: Create Rect</span></li>
-                        <li>✊ <span>Fist: Eraser Mode</span></li>
-                        <li>🤏🤏 <span>2x Pinch: 3D Cube</span></li>
-                        <li>🤲 <span>2x Palm: 3D Sphere</span></li>
-                        <li>↔ <span>Distance: Zoom / Scale</span></li>
+                        <li>🤟 <span>Spider/Pinky-Index: Switch Camera</span></li>
+                        <li>☝ <span>Index Up: Air Blueprint Draw</span></li>
+                        <li>🤏 <span>Pinch: Select & Drag Object</span></li>
+                        <li>✌ <span>Victory Shape: Hologram Circle</span></li>
+                        <li>✋ <span>Open Palm: Hologram Rectangle</span></li>
+                        <li>✊ <span>Clenched Fist: Dissolve/Eraser</span></li>
+                        <li>🤏🤏 <span>Dual Pinch: 3D Quantum Cube</span></li>
+                        <li>🤲 <span>Dual Palm: 3D Quantum Sphere</span></li>
                     </ul>
                 </div>
             </aside>
@@ -294,25 +282,22 @@
     </div>
 
     <script>
-        /**
-         * R07 Nano Blueprint AR Studio Engine Script
-         */
-
+        // System State
         const STATE = {
             gravityActive: false,
             activeGesture: 'NONE',
             selectedObject: null,
-            eraserRadius: 0.5,
-            zoomLevel: 1.0,
+            cameraFacing: 'user', // user = front, environment = back
             physicsObjects: [],
-            historyStack: [],
+            particlesPool: [],
             lastFrameTime: performance.now(),
             fps: 0,
-            metrics: { velocity: 0, accel: 0, lastPos: null, lastTime: null }
+            metrics: { velocity: 0, accel: 0, lastPos: null, lastTime: null },
+            camDebounce: false
         };
 
         let scene, camera, renderer, handsEngine, cameraPipelineInstance;
-        let drawingPointsMesh, hologramGrid, particlesPool = [];
+        let drawingPointsMesh, hologramGrid;
         const raycaster = new THREE.Raycaster();
         const pointerVector = new THREE.Vector2();
 
@@ -320,12 +305,14 @@
             neonCyan: 0x00f3ff,
             neonBlue: 0x0044ff,
             neonPurple: 0xb000ff,
-            holoWhite: 0xe0f7fc
+            ironGold: 0xffcc00,
+            ironRed: 0xff003c
         };
 
         window.addEventListener('DOMContentLoaded', () => {
             initThreeEngine();
             initMediaPipeTracking();
+            initVoiceCommands();
             setupDOMEventHandlers();
             initDefaultSceneGraph();
             animateEngineLoop();
@@ -334,7 +321,7 @@
         function initThreeEngine() {
             const canvas = document.getElementById('webgl-canvas');
             scene = new THREE.Scene();
-            scene.fog = new THREE.FogExp2(0x02060d, 0.015);
+            scene.fog = new THREE.FogExp2(0x02060d, 0.01);
 
             camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
             camera.position.set(0, 0, 5);
@@ -351,31 +338,26 @@
         }
 
         function initDefaultSceneGraph() {
-            const size = 30;
-            const divisions = 30;
-            hologramGrid = new THREE.GridHelper(size, divisions, COLORS.neonCyan, COLORS.neonBlue);
+            // Cool Infinite Grid Below
+            hologramGrid = new THREE.GridHelper(30, 40, COLORS.neonCyan, COLORS.ironRed);
             hologramGrid.position.y = -2;
-            hologramGrid.material.opacity = 0.25;
+            hologramGrid.material.opacity = 0.2;
             hologramGrid.material.transparent = true;
             scene.add(hologramGrid);
 
-            const directionalLight = new THREE.DirectionalLight(COLORS.holoWhite, 1.2);
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 1.5);
             directionalLight.position.set(5, 10, 7);
             scene.add(directionalLight);
 
-            const ambientLight = new THREE.AmbientLight(0x0a1530, 1.5);
-            scene.add(ambientLight);
-
-            const maxDrawingPoints = 2000;
+            // Air Drawing System Instantiation
+            const maxDrawingPoints = 1000;
             const geometry = new THREE.BufferGeometry();
-            const positions = new Float32Array(maxDrawingPoints * 3);
-            geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            geometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(maxDrawingPoints * 3), 3));
             
             const material = new THREE.LineBasicMaterial({
                 color: COLORS.neonCyan,
-                linewidth: 3,
                 transparent: true,
-                opacity: 0.85,
+                opacity: 0.9,
                 blending: THREE.AdditiveBlending
             });
             
@@ -384,8 +366,13 @@
             scene.add(drawingPointsMesh);
         }
 
+        // Setup Tracking Camera Pipeline
         function initMediaPipeTracking() {
             const videoElement = document.getElementById('webcam');
+
+            if (cameraPipelineInstance) {
+                cameraPipelineInstance.stop();
+            }
 
             handsEngine = new Hands({
                 locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
@@ -394,8 +381,8 @@
             handsEngine.setOptions({
                 maxNumHands: 2,
                 modelComplexity: 1,
-                minDetectionConfidence: 0.65,
-                minTrackingConfidence: 0.65
+                minDetectionConfidence: 0.7,
+                minTrackingConfidence: 0.7
             });
 
             handsEngine.onResults(processHandTrackingFrames);
@@ -404,13 +391,36 @@
                 onFrame: async () => {
                     await handsEngine.send({ image: videoElement });
                 },
+                facingMode: STATE.cameraFacing,
                 width: 640,
                 height: 480
             });
             
             cameraPipelineInstance.start()
-                .then(() => updateSystemStatus("SYSTEM ACTIVE // READY"))
-                .catch(err => updateSystemStatus(`CAMERA ERROR: ${err.message}`));
+                .then(() => document.getElementById('status-text').innerText = "JARVIS CORE ONLINE // AR ACTIVE")
+                .catch(err => document.getElementById('status-text').innerText = `HARDWARE LINK FAILURE: ${err.message}`);
+        }
+
+        // Switch Camera Source Logic (Front <-> Back)
+        function toggleCameraSource() {
+            if (STATE.camDebounce) return;
+            STATE.camDebounce = true;
+
+            STATE.cameraFacing = (STATE.cameraFacing === 'user') ? 'environment' : 'user';
+            
+            const videoElement = document.getElementById('webcam');
+            if (STATE.cameraFacing === 'user') {
+                videoElement.classList.add('mirror');
+                document.getElementById('val-cam-mode').innerText = "FRONT (USER)";
+            } else {
+                videoElement.classList.remove('mirror');
+                document.getElementById('val-cam-mode').innerText = "BACK (WORLD)";
+            }
+
+            initMediaPipeTracking();
+
+            // Prevent multi-triggering within 2 seconds
+            setTimeout(() => { STATE.camDebounce = false; }, 2000);
         }
 
         function processHandTrackingFrames(results) {
@@ -426,6 +436,9 @@
 
             calculateKinematicCalculations(indexTip);
 
+            // AI Target Tracker Sparkles on Fingers
+            spawnNanoEnergyParticles(indexTip, COLORS.ironGold, 1);
+
             if (landmarksCount === 1) {
                 evaluateSingleHandGestures(hand1, indexTip);
             } else if (landmarksCount === 2) {
@@ -435,7 +448,9 @@
         }
 
         function transformLandmarkTo3DSpace(landmark) {
-            const x = (1.0 - landmark.x * 2.0) * 4.0;
+            // Spatial inversion compensation formula
+            const multiplierX = (STATE.cameraFacing === 'user') ? -1.0 : 1.0;
+            const x = (landmark.x * 2.0 - 1.0) * 4.0 * multiplierX;
             const y = (1.0 - landmark.y * 2.0) * 3.0;
             const z = -landmark.z * 5.0;
             return new THREE.Vector3(x, y, z);
@@ -447,33 +462,45 @@
             const isRingExtended = hand[16].y < hand[14].y;
             const isPinkyExtended = hand[20].y < hand[18].y;
 
+            // 1. Rock/Spider Sign (Index + Pinky Extended) -> TRIGGER CAMERA SWITCH
+            if (isIndexExtended && !isMiddleExtended && !isRingExtended && isPinkyExtended) {
+                setEngineGestureState("SPIDER SIGN [CAMERA TOGGLE]");
+                toggleCameraSource();
+                return;
+            }
+
+            // 2. Fist Clenched -> DISSOLVE/ERASER MODE
             if (!isIndexExtended && !isMiddleExtended && !isRingExtended && !isPinkyExtended) {
-                setEngineGestureState("HOLD FIST [ERASER]");
+                setEngineGestureState("CLENCHED FIST [ERASER]");
                 executeAirEraserRadius(indexTip);
                 return;
             }
 
+            // 3. Pinch Detection -> TRANSLATION/DRAG OBJECT
             const pinchDistance = calculateDistance3D(hand[4], hand[8]);
             if (pinchDistance < 0.04) {
-                setEngineGestureState("PINCH [SELECT / MOVE]");
+                setEngineGestureState("PINCH [OBJECT MANIPULATION]");
                 executeObjectRaycastSelection(indexTip);
                 return;
             }
 
+            // 4. Victory Sign -> INSTANTIATE 2D CIRCLE
             if (isIndexExtended && isMiddleExtended && !isRingExtended && !isPinkyExtended) {
-                setEngineGestureState("VICTORY [CREATE CIRCLE]");
-                debounceInstantiateObject(() => createProcedural2DShape('CIRCLE', indexTip), 1000);
+                setEngineGestureState("VICTORY [CYAN CIRCLE]");
+                debounceInstantiate(() => createProcedural2DShape('CIRCLE', indexTip), 1000);
                 return;
             }
 
+            // 5. Open Palm -> INSTANTIATE 2D RECTANGLE
             if (isIndexExtended && isMiddleExtended && isRingExtended && isPinkyExtended) {
-                setEngineGestureState("OPEN PALM [CREATE RECT]");
-                debounceInstantiateObject(() => createProcedural2DShape('RECTANGLE', indexTip), 1000);
+                setEngineGestureState("OPEN PALM [SQUARE GRID]");
+                debounceInstantiate(() => createProcedural2DShape('RECTANGLE', indexTip), 1000);
                 return;
             }
 
+            // 6. Only Index Extended -> AIR DRAW MODE
             if (isIndexExtended && !isMiddleExtended) {
-                setEngineGestureState("INDEX POINTER [AIR DRAW]");
+                setEngineGestureState("INDEX [STARK AIR VECTOR DRAW]");
                 appendPointToAirBlueprint(indexTip);
                 return;
             }
@@ -482,14 +509,13 @@
         function evaluateDoubleHandGestures(hand1, hand2) {
             const h1Index = transformLandmarkTo3DSpace(hand1[8]);
             const h2Index = transformLandmarkTo3DSpace(hand2[8]);
-            const currentDistance = h1Index.distanceTo(h2Index);
-
+            
             const isH1Pinch = calculateDistance3D(hand1[4], hand1[8]) < 0.04;
             const isH2Pinch = calculateDistance3D(hand2[4], hand2[8]) < 0.04;
 
             if (isH1Pinch && isH2Pinch) {
-                setEngineGestureState("DOUBLE PINCH [3D CUBE]");
-                debounceInstantiateObject(() => createProcedural3DGeometry('CUBE', h1Index.clone().add(h2Index).multiplyScalar(0.5)), 1200);
+                setEngineGestureState("DOUBLE PINCH [QUANTUM CUBE]");
+                debounceInstantiate(() => createProcedural3DGeometry('CUBE', h1Index.clone().add(h2Index).multiplyScalar(0.5)), 1200);
                 return;
             }
 
@@ -497,26 +523,10 @@
             const isH2Palm = hand2[8].y < hand2[6].y && hand2[12].y < hand2[10].y && hand2[16].y < hand2[14].y;
             
             if (isH1Palm && isH2Palm) {
-                setEngineGestureState("OPEN BOTH PALMS [3D SPHERE]");
-                debounceInstantiateObject(() => createProcedural3DGeometry('SPHERE', h1Index.clone().add(h2Index).multiplyScalar(0.5)), 1200);
+                setEngineGestureState("DUAL PALMS [QUANTUM SPHERE]");
+                debounceInstantiate(() => createProcedural3DGeometry('SPHERE', h1Index.clone().add(h2Index).multiplyScalar(0.5)), 1200);
                 return;
             }
-
-            if (STATE.lastHandsDistance) {
-                const distanceDelta = currentDistance - STATE.lastHandsDistance;
-                if (Math.abs(distanceDelta) > 0.05) {
-                    if (distanceDelta > 0) {
-                        STATE.zoomLevel = Math.min(STATE.zoomLevel + 0.02, 3.0);
-                        setEngineGestureState("HANDS APART [ZOOM IN]");
-                    } else {
-                        STATE.zoomLevel = Math.max(STATE.zoomLevel - 0.02, 0.5);
-                        setEngineGestureState("HANDS TOGETHER [ZOOM OUT]");
-                    }
-                    camera.position.z = 5 / STATE.zoomLevel;
-                    document.getElementById('val-zoom').innerText = `${STATE.zoomLevel.toFixed(1)}x`;
-                }
-            }
-            STATE.lastHandsDistance = currentDistance;
         }
 
         function appendPointToAirBlueprint(pointVector) {
@@ -538,21 +548,18 @@
             drawingPointsMesh.geometry.setDrawRange(0, points.length);
             positionAttribute.needsUpdate = true;
 
-            spawnNanoEnergyParticles(pointVector, COLORS.neonCyan, 3);
+            spawnNanoEnergyParticles(pointVector, COLORS.neonCyan, 2);
         }
 
         function executeAirEraserRadius(targetPoint) {
-            spawnNanoEnergyParticles(targetPoint, 0xff0055, 2);
+            spawnNanoEnergyParticles(targetPoint, COLORS.ironRed, 3);
             
             for (let i = STATE.physicsObjects.length - 1; i >= 0; i--) {
                 const obj = STATE.physicsObjects[i];
-                const distance = obj.position.distanceTo(targetPoint);
-                
-                if (distance < STATE.eraserRadius) {
-                    triggerParticleExplosion(obj.position, obj.userData.color || COLORS.neonBlue);
+                if (obj.position.distanceTo(targetPoint) < 0.6) {
+                    triggerParticleExplosion(obj.position, COLORS.ironRed);
                     scene.remove(obj);
                     STATE.physicsObjects.splice(i, 1);
-                    pushHistoryStateLog();
                     updateUIMetricsCounters();
                 }
             }
@@ -568,15 +575,13 @@
 
             if (intersects.length > 0) {
                 const targetedObj = intersects[0].object;
-                STATE.selectedObject = targetedObj;
-                targetedObj.position.lerp(new THREE.Vector3(indexTip.x, indexTip.y, targetedObj.position.z), 0.2);
+                targetedObj.position.lerp(new THREE.Vector3(indexTip.x, indexTip.y, targetedObj.position.z), 0.25);
+                spawnNanoEnergyParticles(targetedObj.position, COLORS.ironGold, 1);
             }
         }
 
         function createProcedural2DShape(type, baseVector) {
             let shapeGeo;
-            const defaultColor = COLORS.neonCyan;
-
             if (type === 'CIRCLE') {
                 shapeGeo = new THREE.CircleGeometry(0.4, 32);
                 shapeGeo = new THREE.EdgesGeometry(shapeGeo);
@@ -584,192 +589,168 @@
                 shapeGeo = new THREE.RingGeometry(0.3, 0.4, 4);
             }
 
-            const material = new THREE.LineBasicMaterial({ color: defaultColor, side: THREE.DoubleSide });
+            const material = new THREE.LineBasicMaterial({ color: COLORS.neonCyan, side: THREE.DoubleSide });
             const mesh = new THREE.LineSegments(shapeGeo, material);
             mesh.position.copy(baseVector);
             
-            mesh.userData = { 
-                type: type, 
-                physics: { velocity: new THREE.Vector3(), mass: 1.0 },
-                color: defaultColor,
-                mathematics: { area: Math.PI * Math.pow(0.4, 2) } 
-            };
-
+            mesh.userData = { type: type, physics: { velocity: new THREE.Vector3(), mass: 1.0 } };
             scene.add(mesh);
             STATE.physicsObjects.push(mesh);
-            pushHistoryStateLog();
             updateUIMetricsCounters();
-            triggerParticleExplosion(baseVector, defaultColor);
+            triggerParticleExplosion(baseVector, COLORS.neonCyan);
 
-            logMathCalculation(`[CREATED 2D ${type}]<br>Area formula: πr²<br>Computed Area: ${mesh.userData.mathematics.area.toFixed(4)} u²`);
+            logMathCalculation(`[JARVIS TARGET MATRIX]<br>Object: 2D ${type}<br>Area Vector: ${(Math.PI * Math.pow(0.4, 2)).toFixed(4)} u²`);
         }
 
         function createProcedural3DGeometry(type, positionVector) {
-            let geo;
-            const materialColor = (type === 'CUBE') ? COLORS.neonBlue : COLORS.neonPurple;
-
-            if (type === 'CUBE') {
-                geo = new THREE.BoxGeometry(0.6, 0.6, 0.6);
-            } else {
-                geo = new THREE.SphereGeometry(0.4, 16, 16);
-            }
-
+            let geo = (type === 'CUBE') ? new THREE.BoxGeometry(0.6, 0.6, 0.6) : new THREE.SphereGeometry(0.4, 12, 12);
             const wireframeProp = new THREE.MeshBasicMaterial({
-                color: materialColor,
+                color: (type === 'CUBE') ? COLORS.ironGold : COLORS.neonPurple,
                 wireframe: true,
                 transparent: true,
-                opacity: 0.7
+                opacity: 0.75
             });
 
             const mesh = new THREE.Mesh(geo, wireframeProp);
             mesh.position.copy(positionVector);
 
-            let volumeCalculation = (type === 'CUBE') ? Math.pow(0.6, 3) : (4/3) * Math.PI * Math.pow(0.4, 3);
-
             mesh.userData = {
                 type: type,
-                physics: {
-                    velocity: new THREE.Vector3((Math.random() - 0.5) * 0.02, 0, (Math.random() - 0.5) * 0.02),
-                    mass: 1.5
-                },
-                color: materialColor,
-                mathematics: { volume: volumeCalculation }
+                physics: { velocity: new THREE.Vector3((Math.random() - 0.5) * 0.02, 0, (Math.random() - 0.5) * 0.02), mass: 1.5 }
             };
 
             scene.add(mesh);
             STATE.physicsObjects.push(mesh);
-            pushHistoryStateLog();
             updateUIMetricsCounters();
-            triggerParticleExplosion(positionVector, materialColor);
+            triggerParticleExplosion(positionVector, COLORS.ironGold);
 
-            logMathCalculation(`[CREATED 3D ${type}]<br>Volume: ${volumeCalculation.toFixed(4)} u³`);
+            let vol = (type === 'CUBE') ? Math.pow(0.6, 3) : (4/3) * Math.PI * Math.pow(0.4, 3);
+            logMathCalculation(`[STARK QUANTUM SIMULATION]<br>Volume Core: ${vol.toFixed(4)} u³<br>Density Array: Stable`);
+        }
+
+        // Iron Man Smart Voice Controls System (Web Speech API)
+        function initVoiceCommands() {
+            if (!('webkitSpeechRecognition' in window)) {
+                document.getElementById('voice-speech').innerText = "Voice Engine Not Supported on Browser.";
+                return;
+            }
+            const recognition = new webkitSpeechRecognition();
+            recognition.continuous = true;
+            recognition.lang = 'en-US';
+            
+            recognition.onresult = (event) => {
+                const phrase = event.results[event.results.length - 1][0].transcript.toLowerCase().trim();
+                document.getElementById('voice-speech').innerText = `"${phrase}"`;
+
+                if (phrase.includes("clear") || phrase.includes("purge")) {
+                    document.getElementById('btn-clear').click();
+                } else if (phrase.includes("gravity on")) {
+                    if(!STATE.gravityActive) document.getElementById('btn-gravity').click();
+                } else if (phrase.includes("gravity off")) {
+                    if(STATE.gravityActive) document.getElementById('btn-gravity').click();
+                } else if (phrase.includes("camera") || phrase.includes("switch")) {
+                    toggleCameraSource();
+                }
+            };
+
+            recognition.start();
         }
 
         function runPhysicsTick() {
-            const gravityConstant = -0.0098;
-            const frictionCoefficient = 0.985;
-
+            const gravityConstant = -0.01;
             STATE.physicsObjects.forEach(obj => {
                 const phys = obj.userData.physics;
                 if (!phys) return;
 
-                if (STATE.gravityActive) {
-                    phys.velocity.y += gravityConstant;
-                }
-
-                phys.velocity.multiplyScalar(frictionCoefficient);
+                if (STATE.gravityActive) phys.velocity.y += gravityConstant;
+                phys.velocity.multiplyScalar(0.98); // Friction
                 obj.position.add(phys.velocity);
 
                 if (obj.position.y < -1.8) {
                     obj.position.y = -1.8;
-                    phys.velocity.y *= -0.6;
+                    phys.velocity.y *= -0.5; // Elastic bounce
                 }
-
                 obj.rotation.x += 0.005;
                 obj.rotation.y += 0.01;
             });
-        }
-
-        function spawnNanoEnergyParticles(originVector, colorHex, count = 5) {
-            for (let i = 0; i < count; i++) {
-                let pMesh;
-                
-                if (particlesPool.length > 300) {
-                    pMesh = particlesPool.shift();
-                    pMesh.position.copy(originVector);
-                } else {
-                    const pGeo = new THREE.BufferGeometry();
-                    pGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array([0,0,0]), 3));
-                    const pMat = new THREE.PointsMaterial({
-                        color: colorHex,
-                        size: 0.08,
-                        transparent: true,
-                        blending: THREE.AdditiveBlending
-                    });
-                    pMesh = new THREE.Points(pGeo, pMat);
-                    scene.add(pMesh);
-                }
-
-                pMesh.position.copy(originVector);
-                pMesh.userData = {
-                    velocity: new THREE.Vector3((Math.random() - 0.5) * 0.05, (Math.random() - 0.5) * 0.05, (Math.random() - 0.5) * 0.05),
-                    lifespan: 1.0,
-                    decay: 0.03 + Math.random() * 0.02
-                };
-
-                particlesPool.push(pMesh);
-            }
-        }
-
-        function triggerParticleExplosion(position, colorHex) {
-            spawnNanoEnergyParticles(position, colorHex, 25);
         }
 
         function animateEngineLoop() {
             requestAnimationFrame(animateEngineLoop);
 
             const now = performance.now();
-            const delta = now - STATE.lastFrameTime;
-            STATE.fps = Math.round(1000 / delta);
+            STATE.fps = Math.round(1000 / (now - STATE.lastFrameTime));
             STATE.lastFrameTime = now;
 
             runPhysicsTick();
 
-            for (let i = particlesPool.length - 1; i >= 0; i--) {
-                const p = particlesPool[i];
+            // Render Nano Particle Physics Engine
+            for (let i = STATE.particlesPool.length - 1; i >= 0; i--) {
+                const p = STATE.particlesPool[i];
                 p.position.add(p.userData.velocity);
                 p.userData.lifespan -= p.userData.decay;
                 p.material.opacity = p.userData.lifespan;
-                
                 if (p.userData.lifespan <= 0) {
                     scene.remove(p);
-                    particlesPool.splice(i, 1);
+                    STATE.particlesPool.splice(i, 1);
                 }
             }
 
             renderer.render(scene, camera);
 
-            if (Math.random() < 0.1) {
+            if (Math.random() < 0.08) {
                 document.getElementById('val-fps').innerText = STATE.fps;
             }
         }
 
         function calculateKinematicCalculations(currentPosition) {
             const now = performance.now() / 1000;
-            
             if (!STATE.metrics.lastPos) {
                 STATE.metrics.lastPos = currentPosition.clone();
                 STATE.metrics.lastTime = now;
                 return;
             }
+            const elapsed = now - STATE.metrics.lastTime;
+            if (elapsed < 0.1) return;
 
-            const elapsedDeltaTime = now - STATE.metrics.lastTime;
-            if (elapsedDeltaTime < 0.1) return;
+            const dist = currentPosition.distanceTo(STATE.metrics.lastPos);
+            const vel = dist / elapsed;
+            const acc = (vel - STATE.metrics.velocity) / elapsed;
 
-            const calculationDistance = currentPosition.distanceTo(STATE.metrics.lastPos);
-            const instantaneousVelocity = calculationDistance / elapsedDeltaTime;
-            const calculatedAcceleration = (instantaneousVelocity - STATE.metrics.velocity) / elapsedDeltaTime;
-
-            STATE.metrics.velocity = instantaneousVelocity;
-            STATE.metrics.accel = calculatedAcceleration;
+            STATE.metrics.velocity = vel;
             STATE.metrics.lastPos.copy(currentPosition);
             STATE.metrics.lastTime = now;
 
-            if (STATE.activeGesture === "INDEX POINTER [AIR DRAW]") {
-                logMathCalculation(`
-                    [KINEMATIC VECTOR TRACE]<br>
-                    Displacement Δd: ${calculationDistance.toFixed(4)} m<br>
-                    Velocity Vector v: ${instantaneousVelocity.toFixed(2)} m/s<br>
-                    Acceleration Linear a: ${calculatedAcceleration.toFixed(2)} m/s²
-                `);
+            if (STATE.activeGesture.includes("DRAW")) {
+                logMathCalculation(`[KINEMATIC VECTOR METRICS]<br>Velocity: ${vel.toFixed(2)} m/s<br>Acceleration: ${acc.toFixed(2)} m/s²`);
             }
+        }
+
+        function spawnNanoEnergyParticles(origin, colorHex, count = 5) {
+            for (let i = 0; i < count; i++) {
+                const pGeo = new THREE.BufferGeometry().setAttribute('position', new THREE.BufferAttribute(new Float32Array([0,0,0]), 3));
+                const pMat = new THREE.PointsMaterial({ color: colorHex, size: 0.09, transparent: true, blending: THREE.AdditiveBlending });
+                const pMesh = new THREE.Points(pGeo, pMat);
+                pMesh.position.copy(origin);
+                pMesh.userData = {
+                    velocity: new THREE.Vector3((Math.random() - 0.5) * 0.06, (Math.random() - 0.5) * 0.06, (Math.random() - 0.5) * 0.06),
+                    lifespan: 1.0,
+                    decay: 0.04
+                };
+                scene.add(pMesh);
+                STATE.particlesPool.push(pMesh);
+            }
+        }
+
+        function triggerParticleExplosion(pos, color) {
+            spawnNanoEnergyParticles(pos, color, 20);
         }
 
         function setupDOMEventHandlers() {
             document.getElementById('btn-gravity').addEventListener('click', (e) => {
                 STATE.gravityActive = !STATE.gravityActive;
-                e.target.innerText = `GRAVITY: ${STATE.gravityActive ? 'ON' : 'OFF'}`;
-                e.target.classList.toggle('neon-purple-txt');
+                e.target.innerText = `GRAVITY SYSTEM: ${STATE.gravityActive ? 'ON' : 'OFF'}`;
+                e.target.classList.toggle('red-txt');
             });
 
             document.getElementById('btn-clear').addEventListener('click', () => {
@@ -778,90 +759,33 @@
                 drawingPointsMesh.userData.pointsArray = [];
                 drawingPointsMesh.geometry.setDrawRange(0, 0);
                 updateUIMetricsCounters();
-                logMathCalculation("SYSTEM CANVAS PURGED CLEAN.");
             });
 
-            document.getElementById('btn-export-json').addEventListener('click', () => {
-                const payload = STATE.physicsObjects.map(obj => ({
-                    type: obj.userData.type,
-                    position: obj.position,
-                    color: obj.userData.color
-                }));
-                const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(payload));
-                const dlAnchor = document.createElement('a');
-                dlAnchor.setAttribute("href", dataStr);
-                dlAnchor.setAttribute("download", "blueprint_export.json");
-                dlAnchor.click();
-            });
-
-            document.getElementById('btn-export-png').addEventListener('click', () => {
+            document.getElementById('btn-snapshot').addEventListener('click', () => {
                 renderer.render(scene, camera);
-                const dataURL = renderer.domElement.toDataURL('image/png');
                 const link = document.createElement('a');
-                link.download = 'blueprint_snapshot.png';
-                link.href = dataURL;
+                link.download = 'stark_blueprint.png';
+                link.href = renderer.domElement.toDataURL('image/png');
                 link.click();
             });
-
-            document.getElementById('eraser-radius').addEventListener('input', (e) => {
-                STATE.eraserRadius = parseFloat(e.target.value);
-            });
-
-            document.getElementById('btn-undo').addEventListener('click', executeUndoStackRecovery);
         }
 
-        let objectCreationDebounceGate = false;
-        function debounceInstantiateObject(callbackAction, delays) {
-            if (objectCreationDebounceGate) return;
-            objectCreationDebounceGate = true;
-            callbackAction();
-            setTimeout(() => { objectCreationDebounceGate = false; }, delays);
+        let dbGate = false;
+        function debounceInstantiate(cb, ms) {
+            if (dbGate) return;
+            dbGate = true; cb();
+            setTimeout(() => { dbGate = false; }, ms);
         }
 
-        function setEngineGestureState(gestureString) {
-            if (STATE.activeGesture !== gestureString) {
-                STATE.activeGesture = gestureString;
-                document.getElementById('val-gesture').innerText = gestureString;
+        function setEngineGestureState(str) {
+            if (STATE.activeGesture !== str) {
+                STATE.activeGesture = str;
+                document.getElementById('val-gesture').innerText = str;
             }
-        }
-
-        function updateSystemStatus(msg) {
-            document.getElementById('status-text').innerText = msg;
-        }
-
-        function logMathCalculation(htmlMessage) {
-            document.getElementById('math-live-output').innerHTML = htmlMessage;
         }
 
         function updateUIMetricsCounters() {
             document.getElementById('val-objcount').innerText = STATE.physicsObjects.length;
-        }
-
-        function pushHistoryStateLog() {
-            const stateSnapshot = STATE.physicsObjects.map(obj => ({
-                type: obj.userData.type,
-                position: obj.position.clone(),
-                color: obj.userData.color
-            }));
-            STATE.historyStack.push(stateSnapshot);
-            if (STATE.historyStack.length > 25) STATE.historyStack.shift();
-        }
-
-        function executeUndoStackRecovery() {
-            if (STATE.historyStack.length === 0) return;
-            
-            STATE.physicsObjects.forEach(obj => scene.remove(obj));
-            STATE.physicsObjects = [];
-
-            const previousState = STATE.historyStack.pop();
-            previousState.forEach(savedObj => {
-                if (savedObj.type === 'CUBE' || savedObj.type === 'SPHERE') {
-                    createProcedural3DGeometry(savedObj.type, savedObj.position);
-                } else {
-                    createProcedural2DShape(savedObj.type, savedObj.position);
-                }
-            });
-            updateUIMetricsCounters();
         }
 
         function calculateDistance3D(pt1, pt2) {
