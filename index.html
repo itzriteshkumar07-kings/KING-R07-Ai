@@ -1,0 +1,873 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>R07 Nano Blueprint AR Studio</title>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+
+    <style>
+        :root {
+            --neon-cyan: #00f3ff;
+            --neon-blue: #0044ff;
+            --neon-purple: #b000ff;
+            --holo-white: #e0f7fc;
+            --glass-bg: rgba(6, 15, 30, 0.65);
+            --glass-border: rgba(0, 243, 255, 0.25);
+            --font-cyber: 'Courier New', Courier, monospace;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+        }
+
+        body, html {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #02060d;
+            font-family: var(--font-cyber);
+            color: var(--holo-white);
+        }
+
+        /* Scanlines and Cyberpunk Atmosphere */
+        .scanlines {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            background-size: 100% 4px, 6px 100%;
+            z-index: 999;
+            pointer-events: none;
+        }
+
+        #app-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        /* Tracking Target Camera (Flipped context for UI mapping) */
+        #webcam {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            object-fit: cover;
+            transform: scaleX(-1);
+            z-index: 1;
+            opacity: 0.35; /* Blended background */
+        }
+
+        #webgl-canvas {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: 2;
+            pointer-events: none;
+        }
+
+        /* Glassmorphism Engineering Panels */
+        #hud-container {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 3;
+            display: grid;
+            grid-template-rows: 70px 1fr;
+            grid-template-columns: 320px 1fr 320px;
+            grid-template-areas: 
+                "header header header"
+                "left center right";
+            padding: 15px;
+            gap: 15px;
+            pointer-events: none;
+        }
+
+        .panel-glass {
+            background: var(--glass-bg);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: 4px;
+            padding: 15px;
+            pointer-events: auto;
+            box-shadow: 0 0 15px rgba(0, 243, 255, 0.1);
+            overflow-y: auto;
+        }
+
+        .header-panel {
+            grid-area: header;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .telemetry-panel { grid-area: left; }
+        .actions-panel { grid-area: right; }
+
+        /* Interactive Cyber Elements */
+        h1 {
+            font-size: 1.2rem;
+            color: var(--neon-cyan);
+            text-shadow: 0 0 8px var(--neon-cyan);
+            letter-spacing: 2px;
+            display: inline-block;
+        }
+
+        h2 {
+            font-size: 0.9rem;
+            color: var(--neon-cyan);
+            margin-bottom: 12px;
+            border-left: 3px solid var(--neon-cyan);
+            padding-left: 6px;
+        }
+
+        .pulse-dot {
+            display: inline-block;
+            width: 8px; height: 8px;
+            background-color: #00ff66;
+            border-radius: 50%;
+            box-shadow: 0 0 8px #00ff66;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 0.4; }
+            50% { opacity: 1; }
+            100% { opacity: 0.4; }
+        }
+
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8rem;
+            margin-bottom: 8px;
+        }
+
+        .neon-txt { color: var(--neon-cyan); text-shadow: 0 0 5px var(--neon-cyan); }
+        .neon-purple-txt { color: var(--neon-purple); text-shadow: 0 0 5px var(--neon-purple); }
+
+        .cyber-divider {
+            border: 0;
+            height: 1px;
+            background: linear-gradient(90deg, var(--neon-cyan), transparent);
+            margin: 15px 0;
+        }
+
+        .btn-cyber {
+            background: transparent;
+            color: var(--holo-white);
+            border: 1px solid var(--neon-cyan);
+            padding: 6px 12px;
+            font-family: var(--font-cyber);
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-transform: uppercase;
+        }
+
+        .btn-cyber:hover {
+            background: var(--neon-cyan);
+            color: #000;
+            box-shadow: 0 0 10px var(--neon-cyan);
+        }
+
+        .action-btn {
+            width: 100%;
+            margin-bottom: 8px;
+        }
+
+        .alert-btn {
+            border-color: #ff0055;
+            color: #ff0055;
+        }
+        .alert-btn:hover {
+            background: #ff0055;
+            color: #000;
+            box-shadow: 0 0 10px #ff0055;
+        }
+
+        .math-log {
+            font-size: 0.75rem;
+            background: rgba(0,0,0,0.4);
+            padding: 8px;
+            border-radius: 3px;
+            max-height: 200px;
+            overflow-y: auto;
+            color: #a0d8ef;
+            line-height: 1.4;
+        }
+
+        .guide-box ul {
+            list-style: none;
+            font-size: 0.7rem;
+        }
+        .guide-box li {
+            margin-bottom: 6px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        input[type=range] {
+            width: 100%;
+            background: transparent;
+            accent-color: var(--neon-cyan);
+        }
+
+        @media(max-width: 900px) {
+            #hud-container {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto auto auto;
+                grid-template-areas: 
+                    "header"
+                    "left"
+                    "right";
+                overflow-y: auto;
+                pointer-events: auto;
+            }
+            .panel-glass { pointer-events: auto; margin-bottom: 5px;}
+            .controls-global { display: flex; flex-wrap: wrap; gap: 5px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="scanlines"></div>
+
+    <div id="app-container">
+        <video id="webcam" autoplay playsinline muted></video>
+        <canvas id="webgl-canvas"></canvas>
+
+        <div id="hud-container">
+            <header class="panel-glass header-panel">
+                <div class="brand">
+                    <h1>R07 // NANO BLUEPRINT</h1>
+                    <span class="pulse-dot"></span> <span id="status-text">INITIALIZING SYSTEM...</span>
+                </div>
+                <div class="controls-global">
+                    <button id="btn-gravity" class="btn-cyber">GRAVITY: OFF</button>
+                    <button id="btn-export-json" class="btn-cyber">EXPORT JSON</button>
+                    <button id="btn-export-png" class="btn-cyber">SNAPSHOT</button>
+                </div>
+            </header>
+
+            <aside class="panel-glass telemetry-panel">
+                <h2>TELEMETRY DATA</h2>
+                <div class="stat-row"><span>FPS:</span> <span id="val-fps" class="neon-txt">0</span></div>
+                <div class="stat-row"><span>ACTIVE GESTURE:</span> <span id="val-gesture" class="neon-purple-txt">NONE</span></div>
+                <div class="stat-row"><span>OBJECT COUNT:</span> <span id="val-objcount">0</span></div>
+                <div class="stat-row"><span>ZOOM LEVEL:</span> <span id="val-zoom">1.0x</span></div>
+                <hr class="cyber-divider">
+                <h2>MATH ENGINE VECTORS</h2>
+                <div id="math-live-output" class="math-log">
+                    No active calculations. Engage gestures to track computations.
+                </div>
+            </aside>
+
+            <aside class="panel-glass actions-panel">
+                <h2>WORKSPACE</h2>
+                <button id="btn-undo" class="btn-cyber action-btn">UNDO</button>
+                <button id="btn-clear" class="btn-cyber action-btn alert-btn">PURGE CANVAS</button>
+                <div class="eraser-control">
+                    <label for="eraser-radius">ERASER RAD:</label>
+                    <input type="range" id="eraser-radius" min="0.1" max="2.0" step="0.1" value="0.5">
+                </div>
+                <hr class="cyber-divider">
+                <div class="guide-box">
+                    <h3>GESTURE MANIFEST</h3>
+                    <ul>
+                        <li>☝ <span>Index: Air Draw</span></li>
+                        <li>🤏 <span>Pinch: Select / Drag</span></li>
+                        <li>✌ <span>Victory: Create Circle</span></li>
+                        <li>✋ <span>Open Palm: Create Rect</span></li>
+                        <li>✊ <span>Fist: Eraser Mode</span></li>
+                        <li>🤏🤏 <span>2x Pinch: 3D Cube</span></li>
+                        <li>🤲 <span>2x Palm: 3D Sphere</span></li>
+                        <li>↔ <span>Distance: Zoom / Scale</span></li>
+                    </ul>
+                </div>
+            </aside>
+        </div>
+    </div>
+
+    <script>
+        /**
+         * R07 Nano Blueprint AR Studio Engine Script
+         */
+
+        const STATE = {
+            gravityActive: false,
+            activeGesture: 'NONE',
+            selectedObject: null,
+            eraserRadius: 0.5,
+            zoomLevel: 1.0,
+            physicsObjects: [],
+            historyStack: [],
+            lastFrameTime: performance.now(),
+            fps: 0,
+            metrics: { velocity: 0, accel: 0, lastPos: null, lastTime: null }
+        };
+
+        let scene, camera, renderer, handsEngine, cameraPipelineInstance;
+        let drawingPointsMesh, hologramGrid, particlesPool = [];
+        const raycaster = new THREE.Raycaster();
+        const pointerVector = new THREE.Vector2();
+
+        const COLORS = {
+            neonCyan: 0x00f3ff,
+            neonBlue: 0x0044ff,
+            neonPurple: 0xb000ff,
+            holoWhite: 0xe0f7fc
+        };
+
+        window.addEventListener('DOMContentLoaded', () => {
+            initThreeEngine();
+            initMediaPipeTracking();
+            setupDOMEventHandlers();
+            initDefaultSceneGraph();
+            animateEngineLoop();
+        });
+
+        function initThreeEngine() {
+            const canvas = document.getElementById('webgl-canvas');
+            scene = new THREE.Scene();
+            scene.fog = new THREE.FogExp2(0x02060d, 0.015);
+
+            camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(0, 0, 5);
+
+            renderer = new THREE.WebGLRenderer({ canvas: canvas, alpha: true, antialias: true, powerPreference: "high-performance" });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+        }
+
+        function initDefaultSceneGraph() {
+            const size = 30;
+            const divisions = 30;
+            hologramGrid = new THREE.GridHelper(size, divisions, COLORS.neonCyan, COLORS.neonBlue);
+            hologramGrid.position.y = -2;
+            hologramGrid.material.opacity = 0.25;
+            hologramGrid.material.transparent = true;
+            scene.add(hologramGrid);
+
+            const directionalLight = new THREE.DirectionalLight(COLORS.holoWhite, 1.2);
+            directionalLight.position.set(5, 10, 7);
+            scene.add(directionalLight);
+
+            const ambientLight = new THREE.AmbientLight(0x0a1530, 1.5);
+            scene.add(ambientLight);
+
+            const maxDrawingPoints = 2000;
+            const geometry = new THREE.BufferGeometry();
+            const positions = new Float32Array(maxDrawingPoints * 3);
+            geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            
+            const material = new THREE.LineBasicMaterial({
+                color: COLORS.neonCyan,
+                linewidth: 3,
+                transparent: true,
+                opacity: 0.85,
+                blending: THREE.AdditiveBlending
+            });
+            
+            drawingPointsMesh = new THREE.Line(geometry, material);
+            drawingPointsMesh.userData = { pointsArray: [], maxCount: maxDrawingPoints };
+            scene.add(drawingPointsMesh);
+        }
+
+        function initMediaPipeTracking() {
+            const videoElement = document.getElementById('webcam');
+
+            handsEngine = new Hands({
+                locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
+            });
+
+            handsEngine.setOptions({
+                maxNumHands: 2,
+                modelComplexity: 1,
+                minDetectionConfidence: 0.65,
+                minTrackingConfidence: 0.65
+            });
+
+            handsEngine.onResults(processHandTrackingFrames);
+
+            cameraPipelineInstance = new Camera(videoElement, {
+                onFrame: async () => {
+                    await handsEngine.send({ image: videoElement });
+                },
+                width: 640,
+                height: 480
+            });
+            
+            cameraPipelineInstance.start()
+                .then(() => updateSystemStatus("SYSTEM ACTIVE // READY"))
+                .catch(err => updateSystemStatus(`CAMERA ERROR: ${err.message}`));
+        }
+
+        function processHandTrackingFrames(results) {
+            if (!results.multiHandLandmarks || results.multiHandLandmarks.length === 0) {
+                STATE.activeGesture = "NONE";
+                document.getElementById('val-gesture').innerText = "NONE";
+                return;
+            }
+
+            const landmarksCount = results.multiHandLandmarks.length;
+            const hand1 = results.multiHandLandmarks[0];
+            const indexTip = transformLandmarkTo3DSpace(hand1[8]); 
+
+            calculateKinematicCalculations(indexTip);
+
+            if (landmarksCount === 1) {
+                evaluateSingleHandGestures(hand1, indexTip);
+            } else if (landmarksCount === 2) {
+                const hand2 = results.multiHandLandmarks[1];
+                evaluateDoubleHandGestures(hand1, hand2);
+            }
+        }
+
+        function transformLandmarkTo3DSpace(landmark) {
+            const x = (1.0 - landmark.x * 2.0) * 4.0;
+            const y = (1.0 - landmark.y * 2.0) * 3.0;
+            const z = -landmark.z * 5.0;
+            return new THREE.Vector3(x, y, z);
+        }
+
+        function evaluateSingleHandGestures(hand, indexTip) {
+            const isIndexExtended = hand[8].y < hand[6].y;
+            const isMiddleExtended = hand[12].y < hand[10].y;
+            const isRingExtended = hand[16].y < hand[14].y;
+            const isPinkyExtended = hand[20].y < hand[18].y;
+
+            if (!isIndexExtended && !isMiddleExtended && !isRingExtended && !isPinkyExtended) {
+                setEngineGestureState("HOLD FIST [ERASER]");
+                executeAirEraserRadius(indexTip);
+                return;
+            }
+
+            const pinchDistance = calculateDistance3D(hand[4], hand[8]);
+            if (pinchDistance < 0.04) {
+                setEngineGestureState("PINCH [SELECT / MOVE]");
+                executeObjectRaycastSelection(indexTip);
+                return;
+            }
+
+            if (isIndexExtended && isMiddleExtended && !isRingExtended && !isPinkyExtended) {
+                setEngineGestureState("VICTORY [CREATE CIRCLE]");
+                debounceInstantiateObject(() => createProcedural2DShape('CIRCLE', indexTip), 1000);
+                return;
+            }
+
+            if (isIndexExtended && isMiddleExtended && isRingExtended && isPinkyExtended) {
+                setEngineGestureState("OPEN PALM [CREATE RECT]");
+                debounceInstantiateObject(() => createProcedural2DShape('RECTANGLE', indexTip), 1000);
+                return;
+            }
+
+            if (isIndexExtended && !isMiddleExtended) {
+                setEngineGestureState("INDEX POINTER [AIR DRAW]");
+                appendPointToAirBlueprint(indexTip);
+                return;
+            }
+        }
+
+        function evaluateDoubleHandGestures(hand1, hand2) {
+            const h1Index = transformLandmarkTo3DSpace(hand1[8]);
+            const h2Index = transformLandmarkTo3DSpace(hand2[8]);
+            const currentDistance = h1Index.distanceTo(h2Index);
+
+            const isH1Pinch = calculateDistance3D(hand1[4], hand1[8]) < 0.04;
+            const isH2Pinch = calculateDistance3D(hand2[4], hand2[8]) < 0.04;
+
+            if (isH1Pinch && isH2Pinch) {
+                setEngineGestureState("DOUBLE PINCH [3D CUBE]");
+                debounceInstantiateObject(() => createProcedural3DGeometry('CUBE', h1Index.clone().add(h2Index).multiplyScalar(0.5)), 1200);
+                return;
+            }
+
+            const isH1Palm = hand1[8].y < hand1[6].y && hand1[12].y < hand1[10].y && hand1[16].y < hand1[14].y;
+            const isH2Palm = hand2[8].y < hand2[6].y && hand2[12].y < hand2[10].y && hand2[16].y < hand2[14].y;
+            
+            if (isH1Palm && isH2Palm) {
+                setEngineGestureState("OPEN BOTH PALMS [3D SPHERE]");
+                debounceInstantiateObject(() => createProcedural3DGeometry('SPHERE', h1Index.clone().add(h2Index).multiplyScalar(0.5)), 1200);
+                return;
+            }
+
+            if (STATE.lastHandsDistance) {
+                const distanceDelta = currentDistance - STATE.lastHandsDistance;
+                if (Math.abs(distanceDelta) > 0.05) {
+                    if (distanceDelta > 0) {
+                        STATE.zoomLevel = Math.min(STATE.zoomLevel + 0.02, 3.0);
+                        setEngineGestureState("HANDS APART [ZOOM IN]");
+                    } else {
+                        STATE.zoomLevel = Math.max(STATE.zoomLevel - 0.02, 0.5);
+                        setEngineGestureState("HANDS TOGETHER [ZOOM OUT]");
+                    }
+                    camera.position.z = 5 / STATE.zoomLevel;
+                    document.getElementById('val-zoom').innerText = `${STATE.zoomLevel.toFixed(1)}x`;
+                }
+            }
+            STATE.lastHandsDistance = currentDistance;
+        }
+
+        function appendPointToAirBlueprint(pointVector) {
+            const meshData = drawingPointsMesh.userData;
+            const points = meshData.pointsArray;
+            
+            if (points.length > 0) {
+                const lastPoint = points[points.length - 1];
+                if (pointVector.distanceTo(lastPoint) < 0.02) return;
+            }
+
+            points.push(pointVector.clone());
+            if (points.length > meshData.maxCount) points.shift();
+
+            const positionAttribute = drawingPointsMesh.geometry.attributes.position;
+            for (let i = 0; i < points.length; i++) {
+                positionAttribute.setXYZ(i, points[i].x, points[i].y, points[i].z);
+            }
+            drawingPointsMesh.geometry.setDrawRange(0, points.length);
+            positionAttribute.needsUpdate = true;
+
+            spawnNanoEnergyParticles(pointVector, COLORS.neonCyan, 3);
+        }
+
+        function executeAirEraserRadius(targetPoint) {
+            spawnNanoEnergyParticles(targetPoint, 0xff0055, 2);
+            
+            for (let i = STATE.physicsObjects.length - 1; i >= 0; i--) {
+                const obj = STATE.physicsObjects[i];
+                const distance = obj.position.distanceTo(targetPoint);
+                
+                if (distance < STATE.eraserRadius) {
+                    triggerParticleExplosion(obj.position, obj.userData.color || COLORS.neonBlue);
+                    scene.remove(obj);
+                    STATE.physicsObjects.splice(i, 1);
+                    pushHistoryStateLog();
+                    updateUIMetricsCounters();
+                }
+            }
+        }
+
+        function executeObjectRaycastSelection(indexTip) {
+            const screenPos = indexTip.clone().project(camera);
+            pointerVector.x = screenPos.x;
+            pointerVector.y = screenPos.y;
+
+            raycaster.setFromCamera(pointerVector, camera);
+            const intersects = raycaster.intersectObjects(STATE.physicsObjects);
+
+            if (intersects.length > 0) {
+                const targetedObj = intersects[0].object;
+                STATE.selectedObject = targetedObj;
+                targetedObj.position.lerp(new THREE.Vector3(indexTip.x, indexTip.y, targetedObj.position.z), 0.2);
+            }
+        }
+
+        function createProcedural2DShape(type, baseVector) {
+            let shapeGeo;
+            const defaultColor = COLORS.neonCyan;
+
+            if (type === 'CIRCLE') {
+                shapeGeo = new THREE.CircleGeometry(0.4, 32);
+                shapeGeo = new THREE.EdgesGeometry(shapeGeo);
+            } else {
+                shapeGeo = new THREE.RingGeometry(0.3, 0.4, 4);
+            }
+
+            const material = new THREE.LineBasicMaterial({ color: defaultColor, side: THREE.DoubleSide });
+            const mesh = new THREE.LineSegments(shapeGeo, material);
+            mesh.position.copy(baseVector);
+            
+            mesh.userData = { 
+                type: type, 
+                physics: { velocity: new THREE.Vector3(), mass: 1.0 },
+                color: defaultColor,
+                mathematics: { area: Math.PI * Math.pow(0.4, 2) } 
+            };
+
+            scene.add(mesh);
+            STATE.physicsObjects.push(mesh);
+            pushHistoryStateLog();
+            updateUIMetricsCounters();
+            triggerParticleExplosion(baseVector, defaultColor);
+
+            logMathCalculation(`[CREATED 2D ${type}]<br>Area formula: πr²<br>Computed Area: ${mesh.userData.mathematics.area.toFixed(4)} u²`);
+        }
+
+        function createProcedural3DGeometry(type, positionVector) {
+            let geo;
+            const materialColor = (type === 'CUBE') ? COLORS.neonBlue : COLORS.neonPurple;
+
+            if (type === 'CUBE') {
+                geo = new THREE.BoxGeometry(0.6, 0.6, 0.6);
+            } else {
+                geo = new THREE.SphereGeometry(0.4, 16, 16);
+            }
+
+            const wireframeProp = new THREE.MeshBasicMaterial({
+                color: materialColor,
+                wireframe: true,
+                transparent: true,
+                opacity: 0.7
+            });
+
+            const mesh = new THREE.Mesh(geo, wireframeProp);
+            mesh.position.copy(positionVector);
+
+            let volumeCalculation = (type === 'CUBE') ? Math.pow(0.6, 3) : (4/3) * Math.PI * Math.pow(0.4, 3);
+
+            mesh.userData = {
+                type: type,
+                physics: {
+                    velocity: new THREE.Vector3((Math.random() - 0.5) * 0.02, 0, (Math.random() - 0.5) * 0.02),
+                    mass: 1.5
+                },
+                color: materialColor,
+                mathematics: { volume: volumeCalculation }
+            };
+
+            scene.add(mesh);
+            STATE.physicsObjects.push(mesh);
+            pushHistoryStateLog();
+            updateUIMetricsCounters();
+            triggerParticleExplosion(positionVector, materialColor);
+
+            logMathCalculation(`[CREATED 3D ${type}]<br>Volume: ${volumeCalculation.toFixed(4)} u³`);
+        }
+
+        function runPhysicsTick() {
+            const gravityConstant = -0.0098;
+            const frictionCoefficient = 0.985;
+
+            STATE.physicsObjects.forEach(obj => {
+                const phys = obj.userData.physics;
+                if (!phys) return;
+
+                if (STATE.gravityActive) {
+                    phys.velocity.y += gravityConstant;
+                }
+
+                phys.velocity.multiplyScalar(frictionCoefficient);
+                obj.position.add(phys.velocity);
+
+                if (obj.position.y < -1.8) {
+                    obj.position.y = -1.8;
+                    phys.velocity.y *= -0.6;
+                }
+
+                obj.rotation.x += 0.005;
+                obj.rotation.y += 0.01;
+            });
+        }
+
+        function spawnNanoEnergyParticles(originVector, colorHex, count = 5) {
+            for (let i = 0; i < count; i++) {
+                let pMesh;
+                
+                if (particlesPool.length > 300) {
+                    pMesh = particlesPool.shift();
+                    pMesh.position.copy(originVector);
+                } else {
+                    const pGeo = new THREE.BufferGeometry();
+                    pGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array([0,0,0]), 3));
+                    const pMat = new THREE.PointsMaterial({
+                        color: colorHex,
+                        size: 0.08,
+                        transparent: true,
+                        blending: THREE.AdditiveBlending
+                    });
+                    pMesh = new THREE.Points(pGeo, pMat);
+                    scene.add(pMesh);
+                }
+
+                pMesh.position.copy(originVector);
+                pMesh.userData = {
+                    velocity: new THREE.Vector3((Math.random() - 0.5) * 0.05, (Math.random() - 0.5) * 0.05, (Math.random() - 0.5) * 0.05),
+                    lifespan: 1.0,
+                    decay: 0.03 + Math.random() * 0.02
+                };
+
+                particlesPool.push(pMesh);
+            }
+        }
+
+        function triggerParticleExplosion(position, colorHex) {
+            spawnNanoEnergyParticles(position, colorHex, 25);
+        }
+
+        function animateEngineLoop() {
+            requestAnimationFrame(animateEngineLoop);
+
+            const now = performance.now();
+            const delta = now - STATE.lastFrameTime;
+            STATE.fps = Math.round(1000 / delta);
+            STATE.lastFrameTime = now;
+
+            runPhysicsTick();
+
+            for (let i = particlesPool.length - 1; i >= 0; i--) {
+                const p = particlesPool[i];
+                p.position.add(p.userData.velocity);
+                p.userData.lifespan -= p.userData.decay;
+                p.material.opacity = p.userData.lifespan;
+                
+                if (p.userData.lifespan <= 0) {
+                    scene.remove(p);
+                    particlesPool.splice(i, 1);
+                }
+            }
+
+            renderer.render(scene, camera);
+
+            if (Math.random() < 0.1) {
+                document.getElementById('val-fps').innerText = STATE.fps;
+            }
+        }
+
+        function calculateKinematicCalculations(currentPosition) {
+            const now = performance.now() / 1000;
+            
+            if (!STATE.metrics.lastPos) {
+                STATE.metrics.lastPos = currentPosition.clone();
+                STATE.metrics.lastTime = now;
+                return;
+            }
+
+            const elapsedDeltaTime = now - STATE.metrics.lastTime;
+            if (elapsedDeltaTime < 0.1) return;
+
+            const calculationDistance = currentPosition.distanceTo(STATE.metrics.lastPos);
+            const instantaneousVelocity = calculationDistance / elapsedDeltaTime;
+            const calculatedAcceleration = (instantaneousVelocity - STATE.metrics.velocity) / elapsedDeltaTime;
+
+            STATE.metrics.velocity = instantaneousVelocity;
+            STATE.metrics.accel = calculatedAcceleration;
+            STATE.metrics.lastPos.copy(currentPosition);
+            STATE.metrics.lastTime = now;
+
+            if (STATE.activeGesture === "INDEX POINTER [AIR DRAW]") {
+                logMathCalculation(`
+                    [KINEMATIC VECTOR TRACE]<br>
+                    Displacement Δd: ${calculationDistance.toFixed(4)} m<br>
+                    Velocity Vector v: ${instantaneousVelocity.toFixed(2)} m/s<br>
+                    Acceleration Linear a: ${calculatedAcceleration.toFixed(2)} m/s²
+                `);
+            }
+        }
+
+        function setupDOMEventHandlers() {
+            document.getElementById('btn-gravity').addEventListener('click', (e) => {
+                STATE.gravityActive = !STATE.gravityActive;
+                e.target.innerText = `GRAVITY: ${STATE.gravityActive ? 'ON' : 'OFF'}`;
+                e.target.classList.toggle('neon-purple-txt');
+            });
+
+            document.getElementById('btn-clear').addEventListener('click', () => {
+                STATE.physicsObjects.forEach(obj => scene.remove(obj));
+                STATE.physicsObjects = [];
+                drawingPointsMesh.userData.pointsArray = [];
+                drawingPointsMesh.geometry.setDrawRange(0, 0);
+                updateUIMetricsCounters();
+                logMathCalculation("SYSTEM CANVAS PURGED CLEAN.");
+            });
+
+            document.getElementById('btn-export-json').addEventListener('click', () => {
+                const payload = STATE.physicsObjects.map(obj => ({
+                    type: obj.userData.type,
+                    position: obj.position,
+                    color: obj.userData.color
+                }));
+                const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(payload));
+                const dlAnchor = document.createElement('a');
+                dlAnchor.setAttribute("href", dataStr);
+                dlAnchor.setAttribute("download", "blueprint_export.json");
+                dlAnchor.click();
+            });
+
+            document.getElementById('btn-export-png').addEventListener('click', () => {
+                renderer.render(scene, camera);
+                const dataURL = renderer.domElement.toDataURL('image/png');
+                const link = document.createElement('a');
+                link.download = 'blueprint_snapshot.png';
+                link.href = dataURL;
+                link.click();
+            });
+
+            document.getElementById('eraser-radius').addEventListener('input', (e) => {
+                STATE.eraserRadius = parseFloat(e.target.value);
+            });
+
+            document.getElementById('btn-undo').addEventListener('click', executeUndoStackRecovery);
+        }
+
+        let objectCreationDebounceGate = false;
+        function debounceInstantiateObject(callbackAction, delays) {
+            if (objectCreationDebounceGate) return;
+            objectCreationDebounceGate = true;
+            callbackAction();
+            setTimeout(() => { objectCreationDebounceGate = false; }, delays);
+        }
+
+        function setEngineGestureState(gestureString) {
+            if (STATE.activeGesture !== gestureString) {
+                STATE.activeGesture = gestureString;
+                document.getElementById('val-gesture').innerText = gestureString;
+            }
+        }
+
+        function updateSystemStatus(msg) {
+            document.getElementById('status-text').innerText = msg;
+        }
+
+        function logMathCalculation(htmlMessage) {
+            document.getElementById('math-live-output').innerHTML = htmlMessage;
+        }
+
+        function updateUIMetricsCounters() {
+            document.getElementById('val-objcount').innerText = STATE.physicsObjects.length;
+        }
+
+        function pushHistoryStateLog() {
+            const stateSnapshot = STATE.physicsObjects.map(obj => ({
+                type: obj.userData.type,
+                position: obj.position.clone(),
+                color: obj.userData.color
+            }));
+            STATE.historyStack.push(stateSnapshot);
+            if (STATE.historyStack.length > 25) STATE.historyStack.shift();
+        }
+
+        function executeUndoStackRecovery() {
+            if (STATE.historyStack.length === 0) return;
+            
+            STATE.physicsObjects.forEach(obj => scene.remove(obj));
+            STATE.physicsObjects = [];
+
+            const previousState = STATE.historyStack.pop();
+            previousState.forEach(savedObj => {
+                if (savedObj.type === 'CUBE' || savedObj.type === 'SPHERE') {
+                    createProcedural3DGeometry(savedObj.type, savedObj.position);
+                } else {
+                    createProcedural2DShape(savedObj.type, savedObj.position);
+                }
+            });
+            updateUIMetricsCounters();
+        }
+
+        function calculateDistance3D(pt1, pt2) {
+            return Math.sqrt(Math.pow(pt2.x - pt1.x, 2) + Math.pow(pt2.y - pt1.y, 2) + Math.pow(pt2.z - pt1.z, 2));
+        }
+    </script>
+</body>
+</html>
+
