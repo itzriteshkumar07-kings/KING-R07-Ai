@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>R07 Nano Blueprint AR Studio - Iron Man Edition</title>
+    <title>R07 Nano Blueprint AR Studio - Stark Edition</title>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
@@ -16,7 +16,7 @@
             --neon-purple: #b000ff;
             --iron-gold: #ffcc00;
             --iron-red: #ff003c;
-            --glass-bg: rgba(6, 15, 30, 0.7);
+            --glass-bg: rgba(6, 15, 30, 0.75);
             --glass-border: rgba(0, 243, 255, 0.3);
             --font-cyber: 'Courier New', Courier, monospace;
         }
@@ -37,7 +37,6 @@
             color: #e0f7fc;
         }
 
-        /* Stark HUD Atmosphere & Scanlines */
         .scanlines {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
@@ -47,17 +46,16 @@
             pointer-events: none;
         }
 
-        /* Iron Man Center Arc Reactor Grid */
         .arc-reactor-hud {
             position: absolute;
             top: 50%; left: 50%;
             transform: translate(-50%, -50%);
-            width: 300px; height: 300px;
+            width: 260px; height: 260px;
             border: 2px dashed rgba(0, 243, 255, 0.2);
             border-radius: 50%;
             pointer-events: none;
             z-index: 2;
-            animation: rotateHUD 20s linear infinite;
+            animation: rotateHUD 25s linear infinite;
         }
         @keyframes rotateHUD {
             from { transform: translate(-50%, -50%) rotate(0deg); }
@@ -90,7 +88,6 @@
             pointer-events: none;
         }
 
-        /* Panels Layout */
         #hud-container {
             position: absolute;
             top: 0; left: 0; width: 100%; height: 100%;
@@ -224,7 +221,7 @@
     <div class="arc-reactor-hud"></div>
 
     <div id="app-container">
-        <video id="webcam" autoplay playsinline muted class="mirror"></video>
+        <video id="webcam" autoplay playsinline muted class="mirror" width="640" height="480"></video>
         <canvas id="webgl-canvas"></canvas>
 
         <div id="hud-container">
@@ -234,7 +231,7 @@
                     <h1>STARK INDUSTRIES // R07 AR ENGINE</h1>
                 </div>
                 <div>
-                    <span id="status-text" class="gold-txt" style="font-size: 0.8rem;">SYSTEM J.A.R.V.I.S. ONLINE</span>
+                    <span id="status-text" class="gold-txt" style="font-size: 0.8rem;">BOOTING AR CORE...</span>
                 </div>
             </header>
 
@@ -262,19 +259,18 @@
                 <button id="btn-gravity" class="btn-cyber action-btn">GRAVITY SYSTEM: OFF</button>
                 <button id="btn-clear" class="btn-cyber action-btn" style="border-color: var(--iron-red); color: var(--iron-red);">PURGE MATRIX</button>
                 <button id="btn-snapshot" class="btn-cyber action-btn">SAVE GRAPH SCHEMATIC</button>
+                <button id="btn-fallback-cam" class="btn-cyber action-btn" style="border-color: #ffcc00; color: #ffcc00; font-size:0.65rem;">FORCE CAM RESET</button>
                 
                 <hr class="cyber-divider">
                 <div class="guide-box">
                     <h3 class="gold-txt" style="margin-bottom: 8px;">STARK MOTION COMMANDS</h3>
                     <ul>
-                        <li>🤟 <span>Spider/Pinky-Index: Switch Camera</span></li>
-                        <li>☝ <span>Index Up: Air Blueprint Draw</span></li>
-                        <li>🤏 <span>Pinch: Select & Drag Object</span></li>
-                        <li>✌ <span>Victory Shape: Hologram Circle</span></li>
-                        <li>✋ <span>Open Palm: Hologram Rectangle</span></li>
-                        <li>✊ <span>Clenched Fist: Dissolve/Eraser</span></li>
-                        <li>🤏🤏 <span>Dual Pinch: 3D Quantum Cube</span></li>
-                        <li>🤲 <span>Dual Palm: 3D Quantum Sphere</span></li>
+                        <li>🤟 <span>Spider Sign: Switch Cam</span></li>
+                        <li>☝ <span>Index Up: Air Vector Draw</span></li>
+                        <li>🤏 <span>Pinch: Select & Drag</span></li>
+                        <li>✌ <span>Victory Shape: Circle</span></li>
+                        <li>✋ <span>Open Palm: Rectangle</span></li>
+                        <li>✊ <span>Clenched Fist: Dissolve</span></li>
                     </ul>
                 </div>
             </aside>
@@ -282,12 +278,11 @@
     </div>
 
     <script>
-        // System State
         const STATE = {
             gravityActive: false,
             activeGesture: 'NONE',
             selectedObject: null,
-            cameraFacing: 'user', // user = front, environment = back
+            cameraFacing: 'user', 
             physicsObjects: [],
             particlesPool: [],
             lastFrameTime: performance.now(),
@@ -338,7 +333,6 @@
         }
 
         function initDefaultSceneGraph() {
-            // Cool Infinite Grid Below
             hologramGrid = new THREE.GridHelper(30, 40, COLORS.neonCyan, COLORS.ironRed);
             hologramGrid.position.y = -2;
             hologramGrid.material.opacity = 0.2;
@@ -349,7 +343,6 @@
             directionalLight.position.set(5, 10, 7);
             scene.add(directionalLight);
 
-            // Air Drawing System Instantiation
             const maxDrawingPoints = 1000;
             const geometry = new THREE.BufferGeometry();
             geometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(maxDrawingPoints * 3), 3));
@@ -366,42 +359,56 @@
             scene.add(drawingPointsMesh);
         }
 
-        // Setup Tracking Camera Pipeline
-        function initMediaPipeTracking() {
+        // Robust Native Native Fallback Camera Loader Pipeline
+        async function initMediaPipeTracking() {
             const videoElement = document.getElementById('webcam');
+            updateSystemStatus("REQUESTING CAMERA INTERFACE...");
 
-            if (cameraPipelineInstance) {
-                cameraPipelineInstance.stop();
+            try {
+                // Force triggering native hardware constraints first to bypass MediaPipe lockouts
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: STATE.cameraFacing, width: { ideal: 640 }, height: { ideal: 480 } },
+                    audio: false
+                });
+                videoElement.srcObject = stream;
+                
+                // Initialize MediaPipe AI Hand Tracker Engine
+                handsEngine = new Hands({
+                    locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1646695230/${file}`
+                });
+
+                handsEngine.setOptions({
+                    maxNumHands: 2,
+                    modelComplexity: 1,
+                    minDetectionConfidence: 0.6,
+                    minTrackingConfidence: 0.6
+                });
+
+                handsEngine.onResults(processHandTrackingFrames);
+
+                // Initialize Frame Stream Router
+                if (cameraPipelineInstance) {
+                    try { await cameraPipelineInstance.stop(); } catch(e){}
+                }
+
+                cameraPipelineInstance = new Camera(videoElement, {
+                    onFrame: async () => {
+                        await handsEngine.send({ image: videoElement });
+                    },
+                    width: 640,
+                    height: 480
+                });
+                
+                await cameraPipelineInstance.start();
+                updateSystemStatus("JARVIS CORE ONLINE // AR ACTIVE");
+
+            } catch (err) {
+                console.error(err);
+                updateSystemStatus(`ERROR: RUN VIA LOCALHOST OR HTTPS!`);
+                alert("कैमरा ब्लॉक हुआ! कृपया सुनिश्चित करें कि आप 'localhost' या 'https://' सर्वर पर इसे रन कर रहे हैं और कैमरा परमिशन Allow की है।");
             }
-
-            handsEngine = new Hands({
-                locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
-            });
-
-            handsEngine.setOptions({
-                maxNumHands: 2,
-                modelComplexity: 1,
-                minDetectionConfidence: 0.7,
-                minTrackingConfidence: 0.7
-            });
-
-            handsEngine.onResults(processHandTrackingFrames);
-
-            cameraPipelineInstance = new Camera(videoElement, {
-                onFrame: async () => {
-                    await handsEngine.send({ image: videoElement });
-                },
-                facingMode: STATE.cameraFacing,
-                width: 640,
-                height: 480
-            });
-            
-            cameraPipelineInstance.start()
-                .then(() => document.getElementById('status-text').innerText = "JARVIS CORE ONLINE // AR ACTIVE")
-                .catch(err => document.getElementById('status-text').innerText = `HARDWARE LINK FAILURE: ${err.message}`);
         }
 
-        // Switch Camera Source Logic (Front <-> Back)
         function toggleCameraSource() {
             if (STATE.camDebounce) return;
             STATE.camDebounce = true;
@@ -418,9 +425,7 @@
             }
 
             initMediaPipeTracking();
-
-            // Prevent multi-triggering within 2 seconds
-            setTimeout(() => { STATE.camDebounce = false; }, 2000);
+            setTimeout(() => { STATE.camDebounce = false; }, 2500);
         }
 
         function processHandTrackingFrames(results) {
@@ -435,8 +440,6 @@
             const indexTip = transformLandmarkTo3DSpace(hand1[8]); 
 
             calculateKinematicCalculations(indexTip);
-
-            // AI Target Tracker Sparkles on Fingers
             spawnNanoEnergyParticles(indexTip, COLORS.ironGold, 1);
 
             if (landmarksCount === 1) {
@@ -448,7 +451,6 @@
         }
 
         function transformLandmarkTo3DSpace(landmark) {
-            // Spatial inversion compensation formula
             const multiplierX = (STATE.cameraFacing === 'user') ? -1.0 : 1.0;
             const x = (landmark.x * 2.0 - 1.0) * 4.0 * multiplierX;
             const y = (1.0 - landmark.y * 2.0) * 3.0;
@@ -462,21 +464,18 @@
             const isRingExtended = hand[16].y < hand[14].y;
             const isPinkyExtended = hand[20].y < hand[18].y;
 
-            // 1. Rock/Spider Sign (Index + Pinky Extended) -> TRIGGER CAMERA SWITCH
             if (isIndexExtended && !isMiddleExtended && !isRingExtended && isPinkyExtended) {
                 setEngineGestureState("SPIDER SIGN [CAMERA TOGGLE]");
                 toggleCameraSource();
                 return;
             }
 
-            // 2. Fist Clenched -> DISSOLVE/ERASER MODE
             if (!isIndexExtended && !isMiddleExtended && !isRingExtended && !isPinkyExtended) {
                 setEngineGestureState("CLENCHED FIST [ERASER]");
                 executeAirEraserRadius(indexTip);
                 return;
             }
 
-            // 3. Pinch Detection -> TRANSLATION/DRAG OBJECT
             const pinchDistance = calculateDistance3D(hand[4], hand[8]);
             if (pinchDistance < 0.04) {
                 setEngineGestureState("PINCH [OBJECT MANIPULATION]");
@@ -484,21 +483,18 @@
                 return;
             }
 
-            // 4. Victory Sign -> INSTANTIATE 2D CIRCLE
             if (isIndexExtended && isMiddleExtended && !isRingExtended && !isPinkyExtended) {
                 setEngineGestureState("VICTORY [CYAN CIRCLE]");
                 debounceInstantiate(() => createProcedural2DShape('CIRCLE', indexTip), 1000);
                 return;
             }
 
-            // 5. Open Palm -> INSTANTIATE 2D RECTANGLE
             if (isIndexExtended && isMiddleExtended && isRingExtended && isPinkyExtended) {
                 setEngineGestureState("OPEN PALM [SQUARE GRID]");
                 debounceInstantiate(() => createProcedural2DShape('RECTANGLE', indexTip), 1000);
                 return;
             }
 
-            // 6. Only Index Extended -> AIR DRAW MODE
             if (isIndexExtended && !isMiddleExtended) {
                 setEngineGestureState("INDEX [STARK AIR VECTOR DRAW]");
                 appendPointToAirBlueprint(indexTip);
@@ -625,13 +621,12 @@
             triggerParticleExplosion(positionVector, COLORS.ironGold);
 
             let vol = (type === 'CUBE') ? Math.pow(0.6, 3) : (4/3) * Math.PI * Math.pow(0.4, 3);
-            logMathCalculation(`[STARK QUANTUM SIMULATION]<br>Volume Core: ${vol.toFixed(4)} u³<br>Density Array: Stable`);
+            logMathCalculation(`[STARK QUANTUM SIMULATION]<br>Volume Core: ${vol.toFixed(4)} u³`);
         }
 
-        // Iron Man Smart Voice Controls System (Web Speech API)
         function initVoiceCommands() {
             if (!('webkitSpeechRecognition' in window)) {
-                document.getElementById('voice-speech').innerText = "Voice Engine Not Supported on Browser.";
+                document.getElementById('voice-speech').innerText = "Voice Optimization Standby Mode.";
                 return;
             }
             const recognition = new webkitSpeechRecognition();
@@ -652,8 +647,7 @@
                     toggleCameraSource();
                 }
             };
-
-            recognition.start();
+            try { recognition.start(); } catch(e){}
         }
 
         function runPhysicsTick() {
@@ -663,12 +657,12 @@
                 if (!phys) return;
 
                 if (STATE.gravityActive) phys.velocity.y += gravityConstant;
-                phys.velocity.multiplyScalar(0.98); // Friction
+                phys.velocity.multiplyScalar(0.98); 
                 obj.position.add(phys.velocity);
 
                 if (obj.position.y < -1.8) {
                     obj.position.y = -1.8;
-                    phys.velocity.y *= -0.5; // Elastic bounce
+                    phys.velocity.y *= -0.5; 
                 }
                 obj.rotation.x += 0.005;
                 obj.rotation.y += 0.01;
@@ -684,7 +678,6 @@
 
             runPhysicsTick();
 
-            // Render Nano Particle Physics Engine
             for (let i = STATE.particlesPool.length - 1; i >= 0; i--) {
                 const p = STATE.particlesPool[i];
                 p.position.add(p.userData.velocity);
@@ -768,6 +761,10 @@
                 link.href = renderer.domElement.toDataURL('image/png');
                 link.click();
             });
+
+            document.getElementById('btn-fallback-cam').addEventListener('click', () => {
+                initMediaPipeTracking();
+            });
         }
 
         let dbGate = false;
@@ -784,6 +781,14 @@
             }
         }
 
+        function updateSystemStatus(msg) {
+            document.getElementById('status-text').innerText = msg;
+        }
+
+        function logMathCalculation(htmlMessage) {
+            document.getElementById('math-live-output').innerHTML = htmlMessage;
+        }
+
         function updateUIMetricsCounters() {
             document.getElementById('val-objcount').innerText = STATE.physicsObjects.length;
         }
@@ -794,4 +799,3 @@
     </script>
 </body>
 </html>
-
